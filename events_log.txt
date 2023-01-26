@@ -1,0 +1,421 @@
+  1  select t.*
+  2* from   applications t
+
+
+   ID CODE      NAME      DESCRIPTION                USER_ID    LAST_CHANGE_DATE
+_____ _________ _________ __________________________ __________ ______________________
+    1 TMSHUB    TMSHUB    Transportaion Hub          asrajag    2022-11-29 16:41:18
+    2 WMSHUB    WMSHUB    WMS Hub                    asrajag    2022-11-29 16:41:19
+    3 WMSLT     WMSLT     WMS Light                  asrajag    2022-11-29 16:41:19
+    4 OMS       OMS       Order Management System    asrajag    2022-11-29 16:41:19
+
+
+  1  select t.*
+  2* from   organization_types t
+
+
+   ID CODE      DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ _________ ______________ __________ ______________________
+    1 CMP       Company        asrajag    2022-11-29 16:42:24
+    2 SUBCMP    Sub-Company    asrajag    2022-11-29 16:42:24
+    3 WHS       Warehouse      asrajag    2022-11-29 16:42:24
+
+
+  1  select t.*
+  2* from   organizations t
+
+
+   ID    TYPE CODE    SHORT_NM    NAME                      PARENT_ID USER_ID    LAST_CHANGE_DATE
+_____ _______ _______ ___________ ______________________ ____________ __________ ______________________
+    1       1 MCL     MCL         McLane Company Inc.                 asrajag    2022-11-29 16:55:03
+    2       2 FS      FS          Food Service                      1 asrajag    2022-11-29 16:55:03
+    3       2 GRO     GRO         Grocery                           1 asrajag    2022-11-29 16:55:03
+    4       3 100     SW          Southwest                         3 asrajag    2022-11-29 16:55:03
+    5       3 360     MK          Cumberland                        3 asrajag    2022-11-29 16:55:04
+    6       3 606     FS06        Lakeland                          2 asrajag    2022-11-29 16:55:04
+
+6 rows selected.
+
+
+  1  select t.*
+  2* from   cycles t
+
+
+   ID CODE                 DESCRIPTION              USER_ID    LAST_CHANGE_DATE
+_____ ____________________ ________________________ __________ ______________________
+    1 ON_DEMAND            On Demand                asrajag    2022-11-29 17:00:01
+    2 DAILY                Daily                    asrajag    2022-11-29 17:00:01
+    3 WEEKDAYS             Week Days                asrajag    2022-11-29 17:00:02
+    4 WEEKENDS             Week Ends                asrajag    2022-11-29 17:00:02
+    5 WEEKLY               Weekly                   asrajag    2022-11-29 17:00:02
+    6 MONTHLY              Monthly                  asrajag    2022-11-29 20:57:00
+    7 QUARTERLY            Quarterly                asrajag    2022-11-29 20:57:00
+    8 HALF_YEARLY          Half Yearly              asrajag    2022-11-29 20:57:00
+    9 ANNUAL               Annual                   asrajag    2022-11-29 20:57:00
+   10 BIMONTHLY_1          Twice a Month            asrajag    2022-11-29 20:57:00
+   11 BIMONTHLY_2          Once in Two Months       asrajag    2022-11-29 20:57:00
+   12 5_MINUTES            Minutes                  asrajag    2022-11-29 21:09:05
+   13 30_MINUTES           Minutes                  asrajag    2022-11-29 21:09:05
+   14 1_HOURS              Hours                    asrajag    2022-11-29 21:09:05
+   15 2_HOURS              Hours                    asrajag    2022-11-29 21:09:05
+   16 6_HOURS              Hours                    asrajag    2022-11-29 21:09:06
+   17 12_HOURS             Hours                    asrajag    2022-11-29 21:09:06
+   18 ALT_DAYS_1           M,W,F                    asrajag    2022-11-29 21:09:06
+   19 ALT_DAYS_2           TU,TH                    asrajag    2022-11-29 21:09:06
+   20 ALT_DAYS_3           SU,TU,F,                 asrajag    2022-11-29 21:09:06
+   21 ALT_DAYS_4           M,W,TH,SA                asrajag    2022-11-29 21:09:06
+   22 1ST_OF_MONTH         First of the Month       asrajag    2022-12-01 09:21:08
+   23 LAST_DAY_OF_MONTH    Last Day of the Month    asrajag    2022-12-01 09:21:08
+   24 MID_MONTH            Middle of the Month      asrajag    2022-12-01 09:51:21
+
+24 rows selected.
+
+
+  1  select t.*
+  2* from   months_in_a_year t
+
+
+   ID CODE    DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ _______ ______________ __________ ______________________
+    1 JAN     January        asrajag    2022-11-30 20:45:04
+    2 FEB     February       asrajag    2022-11-30 20:45:04
+    3 MAR     March          asrajag    2022-11-30 20:45:04
+    4 APR     April          asrajag    2022-11-30 20:45:05
+    5 MAY     May            asrajag    2022-11-30 20:45:05
+    6 JUN     June           asrajag    2022-11-30 20:45:05
+    7 JUL     July           asrajag    2022-11-30 20:45:05
+    8 AUG     August         asrajag    2022-11-30 20:45:05
+    9 SEP     September      asrajag    2022-11-30 20:45:05
+   10 OCT     October        asrajag    2022-11-30 20:45:05
+   11 NOV     November       asrajag    2022-11-30 20:45:05
+   12 DEC     December       asrajag    2022-11-30 20:45:05
+
+12 rows selected.
+
+
+  1  select t.*
+  2* from   days_of_the_week t
+
+
+   ID CODE    DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ _______ ______________ __________ ______________________
+    1 SUN     Sunday         asrajag    2022-11-30 20:08:43
+    2 MON     Monday         asrajag    2022-11-30 20:08:43
+    3 TUE     Tuesday        asrajag    2022-11-30 20:08:44
+    4 WED     Wednesday      asrajag    2022-11-30 20:08:44
+    5 THU     Thursday       asrajag    2022-11-30 20:08:44
+    6 FRI     Friday         asrajag    2022-11-30 20:08:44
+    7 SAT     Saturday       asrajag    2022-11-30 20:08:44
+
+7 rows selected.
+
+
+  1  select t.*
+  2* from   sub_cycle_months t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   sub_cycle_weeks_in_a_year t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   sub_cycle_weeks_in_a_month t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   sub_cycle_days_of_the_week t
+
+
+   CYCLE_ID    DAY_ID USER_ID    LAST_CHANGE_DATE
+___________ _________ __________ ______________________
+          3         2 asrajag    2022-12-01 08:37:16
+          3         3 asrajag    2022-12-01 08:37:16
+          3         4 asrajag    2022-12-01 08:37:16
+          3         5 asrajag    2022-12-01 08:37:16
+          3         6 asrajag    2022-12-01 08:37:16
+          4         1 asrajag    2022-12-01 08:37:40
+          4         7 asrajag    2022-12-01 08:37:40
+         18         2 asrajag    2022-12-01 09:17:10
+         18         4 asrajag    2022-12-01 09:17:10
+         18         6 asrajag    2022-12-01 09:17:10
+         19         3 asrajag    2022-12-01 09:17:10
+         19         5 asrajag    2022-12-01 09:17:10
+         20         1 asrajag    2022-12-01 09:18:49
+         20         3 asrajag    2022-12-01 09:18:49
+         20         6 asrajag    2022-12-01 09:18:49
+         21         2 asrajag    2022-12-01 09:18:50
+         21         4 asrajag    2022-12-01 09:18:50
+         21         5 asrajag    2022-12-01 09:18:50
+         21         7 asrajag    2022-12-01 09:18:50
+
+19 rows selected.
+
+
+  1  select t.*
+  2* from   sub_cycle_time_in_a_day t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   interval_measures t
+
+
+   ID SYMBOL    DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ _________ ______________ __________ ______________________
+    1 SECOND    Second         asrajag    2022-11-30 21:20:49
+    2 MINUTE    Minute         asrajag    2022-11-30 21:20:49
+    3 HOUR      Hour           asrajag    2022-11-30 21:20:49
+    4 DAY       Day            asrajag    2022-11-30 21:20:49
+    5 WEEK      Week           asrajag    2022-11-30 21:20:49
+    6 MONTH     Month          asrajag    2022-11-30 21:20:49
+    7 YEAR      Year           asrajag    2022-11-30 21:20:49
+    8 DECADE    Decade         asrajag    2022-11-30 21:20:49
+
+8 rows selected.
+
+
+  1  select t.*
+  2* from   interval_conversions t
+
+
+   UNIT    MEASURE_ID    CONVERTED_UNIT    CONVERTED_MEASURE_ID USER_ID    LAST_CHANGE_DATE
+_______ _____________ _________________ _______________________ __________ ______________________
+      1             2                60                       1 asrajag    2022-11-30 21:23:15
+      1             3                60                       2 asrajag    2022-11-30 21:23:15
+      1             4                24                       3 asrajag    2022-11-30 21:23:15
+      1             5                 7                       4 asrajag    2022-11-30 21:23:15
+      1             7                12                       6 asrajag    2022-11-30 21:23:15
+      1             8                10                       7 asrajag    2022-11-30 21:23:15
+
+6 rows selected.
+
+
+  1  select t.*
+  2* from   sub_cycle_add t
+
+
+   CYCLE_ID    INTERVAL_ID    UNITS USER_ID    LAST_CHANGE_DATE
+___________ ______________ ________ __________ ______________________
+          2              4        1 asrajag    2022-12-01 08:35:19
+          5              5        1 asrajag    2022-12-01 08:38:19
+          6              6        1 asrajag    2022-12-01 08:38:49
+          7              6        3 asrajag    2022-12-01 08:39:18
+          8              6        6 asrajag    2022-12-01 08:45:35
+          9              7        1 asrajag    2022-12-01 08:45:52
+         10              6      0.5 asrajag    2022-12-01 09:01:09
+         11              6        2 asrajag    2022-12-01 09:01:24
+         12              2        5 asrajag    2022-12-01 09:03:41
+         13              2       30 asrajag    2022-12-01 09:03:41
+         14              3        1 asrajag    2022-12-01 09:03:41
+         15              3        2 asrajag    2022-12-01 09:03:41
+         16              3        6 asrajag    2022-12-01 09:03:41
+         17              3       12 asrajag    2022-12-01 09:03:41
+
+14 rows selected.
+
+
+  1  select t.*
+  2* from   sub_cycle_generics t
+
+
+   CYCLE_ID MEASURE_CODE       UNITS USER_ID    LAST_CHANGE_DATE
+___________ _______________ ________ __________ ______________________
+         22 MONTH                  1 asrajag    2022-12-01 09:53:58
+         23 MONTH                 -1 asrajag    2022-12-01 09:53:58
+         24 MONTH                0.5 asrajag    2022-12-01 09:54:38
+
+
+  1  select t.*
+  2* from   groups t
+
+
+   ID DESCRIPTION          APPLICATION_ID    CYCLE_ID USER_ID    LAST_CHANGE_DATE
+_____ _________________ _________________ ___________ __________ ______________________
+    1 Purchase Order                    2          13 asrajag    2022-12-01 09:29:32
+
+
+  1  select t.*
+  2* from   group_restrictions t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   event_definitions t
+
+
+   ID DESCRIPTION            PROCEDURE_NAME                                                         USER_ID    LAST_CHANGE_DATE
+_____ ______________________ ______________________________________________________________________ __________ ______________________
+    1 Load Purchase Order    WMSHUB_CODE.XXMCL_WMS_MK_PROD_ASN_IB_OB_PKG.WMS_ASN_EBS_OUTB_MH_PRC    asrajag    2022-12-01 09:31:36
+
+
+  1  select t.*
+  2* from   event_restrictions t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   group_events t
+
+
+   GROUP_ID    EVENT_DEFINITION_ID    SEQUENCE USER_ID    LAST_CHANGE_DATE
+___________ ______________________ ___________ __________ ______________________
+          1                      1           1 asrajag    2022-12-01 09:31:55
+
+
+  1  select t.*
+  2* from   group_event_restrictions t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   event_group_restrictions t
+
+
+no rows selected
+
+  1  select t.*
+  2* from   data_types t
+
+
+   ID DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ ______________ __________ ______________________
+    1 NUMBER         asrajag    2022-11-30 07:20:15
+    2 VARCHAR2       asrajag    2022-11-30 07:20:15
+    3 DATE           asrajag    2022-11-30 07:20:16
+    4 TIMESTAMP      asrajag    2022-11-30 07:20:16
+    5 CLOB           asrajag    2022-11-30 07:20:16
+    6 RAW            asrajag    2022-11-30 07:20:16
+
+6 rows selected.
+
+
+  1  select t.*
+  2* from   event_parameters t
+
+
+   EVENT_DEFINITION_ID    SEQUENCE PARAMETER_NAME       DATA_TYPE_ID PARAMETER_SIZE    PARAMETER_TYPE    USER_ID    LAST_CHANGE_DATE
+______________________ ___________ _________________ _______________ _________________ _________________ __________ ______________________
+                     1           1 i_dc_id                         1                   in                asrajag    2022-12-01 09:32:30
+
+
+  1  select t.*
+  2* from   event_group_organization_defaults t
+
+
+   GROUP_ID    EVENT_DEFINITION_ID    EVENT_SEQUENCE    ORGANIZATION_ID VALUE    PREFERRED_RUN_TM       CREATE_USER_ID    CREATE_DATE            LAST_UPDATE_USER_ID    LAST_CHANGE_DATE
+___________ ______________________ _________________ __________________ ________ ______________________ _________________ ______________________ ______________________ ______________________
+          1                      1                 1                  4 100      2022-12-01 07:05:00    asrajag           2022-12-01 09:33:51    asrajag                2022-12-01 09:33:51
+          1                      1                 1                  5 360      2022-12-01 07:05:00    asrajag           2022-12-01 09:34:14    asrajag                2022-12-01 09:34:14
+
+
+  1  select t.*
+  2* from   event_queue_status t
+
+
+   ID DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ ______________ __________ ______________________
+    1 New            asrajag    2022-12-01 07:21:48
+    2 Locked         asrajag    2022-12-01 07:21:48
+    3 Released       asrajag    2022-12-01 07:21:48
+    4 Cancelled      asrajag    2022-12-01 07:21:48
+    5 Failed         asrajag    2022-12-01 07:21:48
+    6 Completed      asrajag    2022-12-01 07:21:48
+
+6 rows selected.
+
+
+  1  select t.*
+  2* from   event_queues t
+
+
+   ID    PREVIOUS_ID    GROUP_ID    EVENT_DEFINITION_ID    ORGANIZATION_ID VALUE                                                                                              STATUS_ID RUN_AFTER_TM           USER_ID    LAST_CHANGE_DATE
+_____ ______________ ___________ ______________________ __________________ _______________________________________________________________________________________________ ____________ ______________________ __________ ______________________
+    1                          1                      1                  4 declare                                                                                                    6 2022-12-01 06:35:00    asrajag    2022-12-01 09:37:37
+                                                                              i_dc_id number := 100;
+                                                                           begin
+                                                                              WMSHUB_CODE.XXMCL_WMS_MK_PROD_ASN_IB_OB_PKG.WMS_ASN_EBS_OUTB_MH_PRC(i_dc_id => i_dc_id);
+                                                                           end;
+    2                          1                      1                  4 declare                                                                                                    1 2022-12-01 07:05:00    asrajag    2022-12-01 09:37:37
+                                                                              i_dc_id number := 100;
+                                                                           begin
+                                                                              WMSHUB_CODE.XXMCL_WMS_MK_PROD_ASN_IB_OB_PKG.WMS_ASN_EBS_OUTB_MH_PRC(i_dc_id => i_dc_id);
+                                                                           end;
+    3                          1                      1                  5 declare                                                                                                    6 2022-12-01 06:35:00    asrajag    2022-12-01 09:37:37
+                                                                              i_dc_id number := 360;
+                                                                           begin
+                                                                              WMSHUB_CODE.XXMCL_WMS_MK_PROD_ASN_IB_OB_PKG.WMS_ASN_EBS_OUTB_MH_PRC(i_dc_id => i_dc_id);
+                                                                           end;
+    4                          1                      1                  5 declare                                                                                                    1 2022-12-01 07:05:00    asrajag    2022-12-01 09:37:38
+                                                                              i_dc_id number := 360;
+                                                                           begin
+                                                                             WMSHUB_CODE.XXMCL_WMS_MK_PROD_ASN_IB_OB_PKG.WMS_ASN_EBS_OUTB_MH_PRC(i_dc_id => i_dc_id);
+                                                                           end;
+
+
+  1  select t.*
+  2* from   event_logs t
+
+
+   QUEUE_ID    LAP_ID MESSAGE                  CREATE_TS                          BEGIN_TS                           END_TS                                FINISH_CD
+___________ _________ ________________________ __________________________________ __________________________________ __________________________________ ____________
+          1         1 Purchase Order Loaded    01-DEC-22 06.35.29.000000000 AM    01-DEC-22 06.38.29.000000000 AM    01-DEC-22 06.40.29.000000000 AM               1
+          3         1 Purchase Order Loaded    01-DEC-22 06.35.29.000000000 AM    01-DEC-22 06.38.29.000000000 AM    01-DEC-22 06.42.29.000000000 AM               1
+
+
+  1  select t.*
+  2* from   helper_sql_types t
+
+
+   ID DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ ______________ __________ ______________________
+    1 GENERICS       asrajag    2022-12-01 09:40:48
+    2 GROUP          asrajag    2022-12-01 09:40:48
+    3 EVENT          asrajag    2022-12-01 09:40:48
+
+
+  1  select t.*
+  2* from   helper_sql_execution_points t
+
+
+   ID DESCRIPTION    USER_ID    LAST_CHANGE_DATE
+_____ ______________ __________ ______________________
+    1 NA             asrajag    2022-12-01 09:42:27
+    2 BEGIN          asrajag    2022-12-01 09:42:27
+    3 END            asrajag    2022-12-01 09:42:27
+
+
+  1  select t.*
+  2* from   helper_sql_headers t
+
+
+   ID    TYPE    EXECUTION_POINT_ID    REFERENCE_ID    SUB_REFERENCE_ID USER_ID    LAST_CHANGE_DATE
+_____ _______ _____________________ _______________ ___________________ __________ ______________________
+    1       1                     1              22                     asrajag    2022-12-01 09:48:04
+    2       1                     1              23                     asrajag    2022-12-01 09:48:19
+    3       1                     1              24                     asrajag    2022-12-01 09:55:13
+
+
+  1  select t.*
+  2* from   helper_sql_details t
+
+
+   HEADER_ID    ID SQL_TEXT                                                                       USER_ID    LAST_CHANGE_DATE
+____________ _____ ______________________________________________________________________________ __________ ______________________
+           1     1 select trunc(sysdate, 'MM')                                                    asrajag    2022-12-01 09:50:37
+                   from   dual
+           2     1 select last_day(trunc(sysdate))                                                asrajag    2022-12-01 09:50:37
+                   from   dual
+           3     1 select round(cast(to_char(last_day(sysdate), 'DD') as int) / 2)                asrajag    2022-12-01 09:57:40
+                   from   dual
+
+
