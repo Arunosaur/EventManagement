@@ -1,3 +1,36 @@
+drop table cycles;
+drop table organization_types;
+drop table applications;
+drop table sub_cycle_weeks_in_a_year;
+drop table sub_cycle_weeks_in_a_month;
+drop table days_of_the_week;
+drop table sub_cycle_days_of_the_week;
+drop table event_definitions;
+drop table event_parameters;
+drop table event_queue_status;
+drop table group_events;
+drop table organizations;
+drop table event_group_organization_defaults;
+drop table event_queues;
+drop table event_logs;
+drop table sub_cycle_time_in_a_day;
+drop table sub_cycle_generics;
+drop table data_types;
+drop table groups;
+drop table group_event_restrictions;
+drop table event_group_restrictions;
+drop table helper_sql_execution_points;
+drop table helper_sql_types;
+drop table helper_sql_headers;
+drop table helper_sql_details;
+drop table interval_measures;
+drop table months_in_a_year;
+drop table sub_cycle_months;
+drop table sub_cycle_add;
+drop table interval_conversions;
+drop table event_restrictions;
+drop table group_restrictions;
+
 create table applications
 (id   number(5)   not null constraint pk_applications primary key,
  code varchar2(8) not null constraint uk_applications unique,
@@ -145,6 +178,7 @@ create table groups
  description  VARCHAR2(50) not null,
  application_id number(5) not null,
  cycle_id  NUMBER(5) not null,
+ preferred_run_tm    date,
  user_id varchar2(128) not null,
  last_change_date  date default current_date not null,
  constraint fk_groups_application foreign key (application_id) references applications(id),
@@ -270,17 +304,16 @@ create table event_logs
 create table event_group_organization_defaults
 (group_id    NUMBER(38,0) not null,
  event_definition_id NUMBER(38,0) not null,
- event_sequence      number(4) not null,
+ parameter_sequence  number(4) not null,
  organization_id     number(5) not null,
  value               clob not null,
- preferred_run_tm    date,
  create_user_id varchar2(128) not null,
  create_date       date default current_date not null,
  last_update_user_id varchar2(128) not null,
  last_change_date  date default current_date not null,
- constraint pk_event_group_organization_defaults primary key (group_id, event_definition_id, event_sequence, organization_id),
+ constraint pk_event_group_organization_defaults primary key (group_id, event_definition_id, parameter_sequence, organization_id),
  constraint fk_event_group_organization_defaults_group_events foreign key (group_id, event_definition_id)  references group_events (group_id, event_definition_id),
- constraint fk_event_group_organization_defaults_event_parameters foreign key (event_definition_id, event_sequence) references event_parameters (event_definition_id, sequence),
+ constraint fk_event_group_organization_defaults_event_parameters foreign key (event_definition_id, parameter_sequence) references event_parameters (event_definition_id, sequence),
  constraint fk_event_group_organization_defaults_organizations foreign key (organization_id) references organizations(id)
 );
 
@@ -290,6 +323,7 @@ create table helper_sql_types
  user_id varchar2(128) not null,
  last_change_date  date default current_date not null
 );
+
 create table helper_sql_execution_points
 (id   number(1) not null constraint pk_helper_sql_execution_points primary key,
  description varchar2(5) not null,

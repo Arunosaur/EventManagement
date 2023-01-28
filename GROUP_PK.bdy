@@ -39,7 +39,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_groups for
-         select t.id, t.description, a.description application, c.description cycle, t.user_id, t.last_change_date
+         select t.id, t.description, a.description application, c.description cycle, t.preferred_run_tm, t.user_id, t.last_change_date
          from   em.groups       t
          join   em.applications a
          on     a.id = t.application_id
@@ -58,11 +58,12 @@ is
 
    procedure register
    (
-      i_description    em.groups.description%type,
-      i_application_id em.groups.application_id%type,
-      i_cycle_id       em.groups.cycle_id%type,
-      i_user_id        em.groups.user_id%type,
-      o_id             out em.groups.id%type
+      i_description      em.groups.description%type,
+      i_application_id   em.groups.application_id%type,
+      i_cycle_id         em.groups.cycle_id%type,
+      i_preferred_run_tm em.groups.preferred_run_tm%type,
+      i_user_id          em.groups.user_id%type,
+      o_id               out em.groups.id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -87,6 +88,7 @@ is
       logs.add_parm(l_tt_parms, 'i_description', i_description);
       logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
       logs.add_parm(l_tt_parms, 'i_cycle_id', i_cycle_id);
+      logs.add_parm(l_tt_parms, 'i_preferred_tm', i_preferred_run_tm);
       logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
 
       logs.dbg('ENTRY', l_tt_parms);
@@ -96,9 +98,9 @@ is
       from   available_id(em.groups);
 
       insert into em.groups
-         (id, description, application_id, cycle_id, user_id)
+         (id, description, application_id, cycle_id, preferred_run_tm, user_id)
       values
-         (o_id, i_description, i_application_id, i_cycle_id, i_user_id);
+         (o_id, i_description, i_application_id, i_cycle_id, i_preferred_run_tm, i_user_id);
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -205,6 +207,56 @@ is
 
    end change_application;
 
+   procedure post_preferred_time
+   (
+      i_id               em.groups.id%type,
+      i_preferred_run_tm em.groups.preferred_run_tm%type,
+      i_user_id          em.groups.user_id%type
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || post_preferred_time
+   ||   post the next preferred time to run for this group.
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/01/22 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'GROUP_PK.post_preferred_time';
+
+      l_tt_parms logs.tar_parm;
+
+      l_c_date constant date := date '1900-01-01';
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_id', i_id);
+      logs.add_parm(l_tt_parms, 'i_preferred_run_tm', i_preferred_run_tm);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      update em.groups
+      set    preferred_run_tm = i_preferred_run_tm,
+             user_id          = i_user_id,
+             last_change_date = current_date
+      where  id = i_id
+      and    nvl(preferred_run_tm, l_c_date) != nvl(i_preferred_run_tm, l_c_date);
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end post_preferred_time;
+
    procedure modify
    (
       i_id          em.groups.id%type,
@@ -238,7 +290,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       update em.groups
-      set    description   = i_description,
+      set    description      = i_description,
              user_id          = i_user_id,
              last_change_date = current_date
       where  id = i_id

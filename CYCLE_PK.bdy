@@ -73,7 +73,7 @@ is
    ||----------------------------------------------------------------------------
    */
    is
-      l_c_module constant typ.t_maxfqnm := 'CYCLE_PK.register';
+      l_c_module constant typ.t_maxfqnm := 'CYCLE_PK.add';
 
       l_tt_parms logs.tar_parm;
    begin

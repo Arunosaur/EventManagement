@@ -20,11 +20,12 @@ is
 
    procedure register
    (
-      i_description    em.groups.description%type,
-      i_application_id em.groups.application_id%type,
-      i_cycle_id       em.groups.cycle_id%type,
-      i_user_id        em.groups.user_id%type,
-      o_id             out em.groups.id%type
+      i_description      em.groups.description%type,
+      i_application_id   em.groups.application_id%type,
+      i_cycle_id         em.groups.cycle_id%type,
+      i_preferred_run_tm em.groups.preferred_run_tm%type,
+      i_user_id          em.groups.user_id%type,
+      o_id               out em.groups.id%type
    );
 
    procedure change_cycle
@@ -39,6 +40,13 @@ is
       i_id             em.groups.id%type,
       i_application_id em.groups.application_id%type,
       i_user_id        em.groups.user_id%type
+   );
+
+   procedure post_preferred_time
+   (
+      i_id               em.groups.id%type,
+      i_preferred_run_tm em.groups.preferred_run_tm%type,
+      i_user_id          em.groups.user_id%type
    );
 
    procedure deregister

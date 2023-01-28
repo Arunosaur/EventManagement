@@ -3,8 +3,8 @@ create package         MANAGER_PK
 ||---------------------------------------------------------------------------------
 || NAME                : MANAGER_PK
 || CREATED BY          : Arun S. Rajagopalan
-|| CREATE DATE         : Jan, 14th 2020
-|| DESCRIPTION         : To maintain applications
+|| CREATE DATE         : Jan, 27th 2023
+|| DESCRIPTION         : To manage events
 ||---------------------------------------------------------------------------------
 || CHANGELOG
 ||---------------------------------------------------------------------------------
@@ -16,33 +16,11 @@ create package         MANAGER_PK
 */
 is
 
-   procedure get(i_id em.applications.id%type);
-
-   procedure get(o_applications out sys_refcursor);
-
-   procedure add
-   (
-      i_code        em.applications.code%type,
-      i_name        em.applications.name%type,
-      i_description em.applications.description%type,
-      i_user_id     em.applications.user_id%type,
-      o_id          out em.applications.id%type
-   );
-
-   procedure modify
-   (
-      i_id          em.applications.id%type,
-      i_code        em.applications.code%type default null,
-      i_name        em.applications.name%type default null,
-      i_description em.applications.description%type default null,
-      i_user_id     em.applications.user_id%type
-   );
-
-   procedure remove
-   (
-      i_id      em.applications.id%type,
-      i_user_id varchar2
-   );
+   procedure push_default(i_group_id        em.event_queues.group_id%type,
+                          i_organization_id em.event_queues.organization_id%type,
+                          i_run_after_tm    em.event_queues.run_after_tm%type default null,
+                          i_user_id         em.event_queues.user_id%type
+                         );
 
 end MANAGER_PK;
 /

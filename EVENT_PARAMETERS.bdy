@@ -196,7 +196,7 @@ is
    ||----------------------------------------------------------------------------
    */
    is
-      l_c_module constant typ.t_maxfqnm := 'EVENT_PARAMETERS.modify';
+      l_c_module constant typ.t_maxfqnm := 'EVENT_PARAMETERS.change_sequence';
 
       l_tt_parms logs.tar_parm;
    begin
