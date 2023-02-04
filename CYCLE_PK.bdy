@@ -87,7 +87,7 @@ is
 
       select *
       into   o_id
-      from   available_id(em.groups);
+      from   available_id(em.cycles);
 
       insert into em.cycles
          (id, code, description, user_id)

@@ -107,8 +107,7 @@ create package body         UT_APPLICATION_PK
       from   em.applications
       union all
       select 'TST', 'Test', 'Testing an application', 'asrajag'
-      from   dual
-      order by 1;
+      from   dual;
 
       EM_CODE.APPLICATION_PK.register(i_code        => 'TST',
                                       i_name        => 'Test',
@@ -121,7 +120,7 @@ create package body         UT_APPLICATION_PK
       EM_CODE.APPLICATION_PK.get(o_applications => l_csr_actual);
 
       -- Assert
-      ut.expect(l_csr_actual).to_equal(l_csr_expect).exclude('ID, LAST_CHANGE_DATE'); 
+      ut.expect(l_csr_actual).to_equal(l_csr_expect).exclude('ID, LAST_CHANGE_DATE').unordered(); 
       --ut.expect(l_csr_actual).to_have_count(l_expect_count);
    end get;
 

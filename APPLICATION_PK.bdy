@@ -87,7 +87,7 @@ is
       open o_applications for
          select t.id, t.code, t.name, t.description, t.user_id, t.last_change_date
          from   em.applications t
-         order by t.code;
+         order by t.last_change_date;
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');

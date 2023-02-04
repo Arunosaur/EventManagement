@@ -1,7 +1,7 @@
-create package         MANAGER_PK
+create package         QUEUE_PK
 /*
 ||---------------------------------------------------------------------------------
-|| NAME                : MANAGER_PK
+|| NAME                : QUEUE_PK
 || CREATED BY          : Arun S. Rajagopalan
 || CREATE DATE         : Jan, 27th 2023
 || DESCRIPTION         : To manage events
@@ -16,12 +16,19 @@ create package         MANAGER_PK
 */
 is
 
-   procedure disseminate
+   procedure push_default(i_group_id        em.event_queues.group_id%type,
+                          i_organization_id em.event_queues.organization_id%type,
+                          i_run_after_tm    em.event_queues.run_after_tm%type default null,
+                          i_user_id         em.event_queues.user_id%type
+                         );
+
+   procedure change_status
    (
-      i_dc_id   integer,
-      i_user_id varchar2
+      i_id        em.event_queues.id%type,
+      i_to_status em.event_queue_status.description%type,
+      i_user_id   em.event_queues.user_id%type
    );
 
-end MANAGER_PK;
+end QUEUE_PK;
 /
 
