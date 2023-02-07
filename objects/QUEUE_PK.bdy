@@ -16,6 +16,514 @@ create package body         QUEUE_PK
 */
 is
 
+   function counter
+   (
+      i_sql_type         em.helper_sql_types.description%type,
+      i_execution_point  em.helper_sql_execution_points.description%type,
+      i_reference_id     em.helper_sql_headers.reference_id%type,
+      i_sub_reference_id em.helper_sql_headers.sub_reference_id%type default null
+   )
+   return integer
+   /*
+   ||---------------------------------------------------------------------------
+   || counter
+   ||  Count the number of helpers
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/02 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.counter';
+
+      l_tt_parms logs.tar_parm;
+
+      l_count integer;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+      logs.add_parm(l_tt_parms, 'i_sql_type', i_sql_type);
+      logs.add_parm(l_tt_parms, 'i_execution_point', i_execution_point);
+      logs.add_parm(l_tt_parms, 'i_reference_id', i_reference_id);
+      logs.add_parm(l_tt_parms, 'i_sub_reference_id', i_sub_reference_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select count(1)
+      into   l_count
+      from   em.helper_sql_headers          h
+      join   em.helper_sql_types            t
+      on     t.id = h.type
+      and    t.description = i_sql_type
+      join   em.helper_sql_execution_points p
+      on     p.id = h.execution_point_id
+      and    p.description = i_execution_point
+      join   em.helper_sql_details          d
+      on     d.header_id = h.id
+      where  h.reference_id = i_reference_id
+      and    (   i_sub_reference_id is null
+              or h.sub_reference_id = i_sub_reference_id
+             );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_count;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return 0;
+
+   end counter;
+
+   function sql_text
+   (
+      i_sql_type         em.helper_sql_types.description%type,
+      i_execution_point  em.helper_sql_execution_points.description%type,
+      i_reference_id     em.helper_sql_headers.reference_id%type,
+      i_sub_reference_id em.helper_sql_headers.sub_reference_id%type default null,
+      i_current_block_id em.helper_sql_details.id%type
+   )
+   return varchar2
+   /*
+   ||---------------------------------------------------------------------------
+   || sql_text
+   ||  provide the sql/plsql text for the given detail
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/02 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.sql_text';
+
+      l_tt_parms logs.tar_parm;
+
+      l_sql_block varchar2(32767);
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+      logs.add_parm(l_tt_parms, 'i_sql_type', i_sql_type);
+      logs.add_parm(l_tt_parms, 'i_execution_point', i_execution_point);
+      logs.add_parm(l_tt_parms, 'i_reference_id', i_reference_id);
+      logs.add_parm(l_tt_parms, 'i_sub_reference_id', i_sub_reference_id);
+      logs.add_parm(l_tt_parms, 'i_current_block_id', i_current_block_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select d.sql_text
+      into   l_sql_block
+      from   em.helper_sql_headers          h
+      join   em.helper_sql_types            t
+      on     t.id = h.type
+      and    t.description = i_sql_type
+      join   em.helper_sql_execution_points p
+      on     p.id = h.execution_point_id
+      and    p.description = i_execution_point
+      join   em.helper_sql_details          d
+      on     d.header_id = h.id
+      where  h.reference_id = i_reference_id
+      and    (   i_sub_reference_id is null
+              or h.sub_reference_id = i_sub_reference_id
+             )
+      and    d.id = i_current_block_id;
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_sql_block;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return 0;
+
+   end sql_text;
+
+   function count_global_block
+   return integer
+   /*
+   ||---------------------------------------------------------------------------
+   || count_global_block
+   ||  Count the number of blocks at a global level
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.count_global_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_count integer;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_count := counter(i_sql_type        => 'GLOBAL',
+                         i_execution_point => 'BLOCK',
+                         i_reference_id    => -1000
+                        );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_count;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return 0;
+
+   end count_global_block;
+
+   function global_block(i_current_block_id em.helper_sql_details.id%type)
+   return varchar2
+   /*
+   ||---------------------------------------------------------------------------
+   || global_block
+   ||  Get the PLSQL blocks at the global level.
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.global_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_sql_block varchar2(32767);
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_current_block_id', i_current_block_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_sql_block := sql_text(i_sql_type         => 'GLOBAL',
+                              i_execution_point  => 'BLOCK',
+                              i_reference_id     => -1000,
+                              i_current_block_id => i_current_block_id
+                             );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_sql_block;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end global_block;
+
+   function count_application_block(i_application_id em.applications.id%type)
+   return integer
+   /*
+   ||---------------------------------------------------------------------------
+   || count_application_block
+   ||  Count the number of blocks at the application level
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.count_application_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_count integer;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_count := counter(i_sql_type        => 'APPLICATION',
+                         i_execution_point => 'BLOCK',
+                         i_reference_id    => i_application_id
+                        );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_count;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return 0;
+
+   end count_application_block;
+
+   function application_block
+   (
+      i_application_id   em.applications.id%type,
+      i_current_block_id em.helper_sql_details.id%type
+   )
+   return varchar2
+   /*
+   ||---------------------------------------------------------------------------
+   || application_block
+   ||  Get the PLSQL blocks for application level blocking
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.application_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_sql_block varchar2(32767);
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
+      logs.add_parm(l_tt_parms, 'i_current_block_id', i_current_block_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_sql_block := sql_text(i_sql_type         => 'APPLICATION',
+                              i_execution_point  => 'BLOCK',
+                              i_reference_id     => i_application_id,
+                              i_current_block_id => i_current_block_id
+                             );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_sql_block;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end application_block;
+
+   function count_organization_block(i_organization_id em.organizations.id%type)
+   return integer
+   /*
+   ||---------------------------------------------------------------------------
+   || count_organization_block
+   ||  Count the number of blocks at the organization level
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.count_organization_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_count integer;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_count := counter(i_sql_type        => 'ORGANIZATION',
+                         i_execution_point => 'BLOCK',
+                         i_reference_id    => i_organization_id
+                        );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_count;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return 0;
+
+   end count_organization_block;
+
+   function organization_block
+   (
+      i_organization_id   em.organizations.id%type,
+      i_current_block_id em.helper_sql_details.id%type
+   )
+   return varchar2
+   /*
+   ||---------------------------------------------------------------------------
+   || organization_block
+   ||  Get the PLSQL blocks for organization level blocking
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.organization_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_sql_block varchar2(32767);
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
+      logs.add_parm(l_tt_parms, 'i_current_block_id', i_current_block_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_sql_block := sql_text(i_sql_type         => 'ORGANIZATION',
+                              i_execution_point  => 'BLOCK',
+                              i_reference_id     => i_organization_id,
+                              i_current_block_id => i_current_block_id
+                             );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_sql_block;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end organization_block;
+
+   function count_app_org_block
+   (
+      i_application_id  em.applications.id%type,
+      i_organization_id em.organizations.id%type
+   )
+   return integer
+   /*
+   ||---------------------------------------------------------------------------
+   || count_app_org_block
+   ||  Count the number of blocks for application & organization
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/02 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.count_app_org_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_count integer;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
+      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_count := counter(i_sql_type         => 'APP_ORG',
+                         i_execution_point  => 'BLOCK',
+                         i_reference_id     => i_application_id,
+                         i_sub_reference_id => i_organization_id
+                        );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_count;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return 0;
+
+   end count_app_org_block;
+
+   function app_org_block
+   (
+      i_application_id   em.applications.id%type,
+      i_organization_id  em.organizations.id%type,
+      i_current_block_id em.helper_sql_details.id%type
+   )
+   return varchar2
+   /*
+   ||---------------------------------------------------------------------------
+   || app_org_block
+   ||  Get the PLSQL blocks that need to be excecuted at the application &
+   ||  organization level
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/02 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.app_org_block';
+
+      l_tt_parms logs.tar_parm;
+
+      l_sql_block varchar2(32767);
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
+      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
+      logs.add_parm(l_tt_parms, 'i_current_block_id', i_current_block_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_sql_block := sql_text(i_sql_type         => 'APP_ORG',
+                              i_execution_point  => 'BLOCK',
+                              i_reference_id     => i_application_id,
+                              i_sub_reference_id => i_organization_id,
+                              i_current_block_id => i_current_block_id
+                             );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_sql_block;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end app_org_block;
+
    function count_event_constructor
    return integer
    /*
@@ -41,18 +549,10 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select count(1)
-      into   l_count
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'BEGIN'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = -1000;
+      l_count := counter(i_sql_type        => 'EVENT',
+                         i_execution_point => 'BEGIN',
+                         i_reference_id    => -1000
+                        );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -93,19 +593,11 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select d.sql_text
-      into   l_sql_block
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'BEGIN'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = -1000
-      and    d.id = i_current_block_id;
+      l_sql_block := sql_text(i_sql_type         => 'EVENT',
+                              i_execution_point  => 'BEGIN',
+                              i_reference_id     => -1000,
+                              i_current_block_id => i_current_block_id
+                             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -144,18 +636,10 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select count(1)
-      into   l_count
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'END'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = -1000;
+      l_count := counter(i_sql_type        => 'EVENT',
+                         i_execution_point => 'END',
+                         i_reference_id    => -1000
+                        );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -196,19 +680,11 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select d.sql_text
-      into   l_sql_block
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'END'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = -1000
-      and    d.id = i_current_block_id;
+      l_sql_block := sql_text(i_sql_type         => 'EVENT',
+                              i_execution_point  => 'END',
+                              i_reference_id     => -1000,
+                              i_current_block_id => i_current_block_id
+                             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -249,18 +725,10 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select count(1)
-      into   l_count
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'GROUP'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'BEGIN'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id;
+      l_count := counter(i_sql_type        => 'GROUP',
+                         i_execution_point => 'BEGIN',
+                         i_reference_id    => i_reference_id
+                        );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -306,19 +774,11 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select d.sql_text
-      into   l_sql_block
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'GROUP'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'BEGIN'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id
-      and    d.id = i_current_block_id;
+      l_sql_block := sql_text(i_sql_type         => 'GROUP',
+                              i_execution_point  => 'BEGIN',
+                              i_reference_id     => i_reference_id,
+                              i_current_block_id => i_current_block_id
+                             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -359,18 +819,10 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select count(1)
-      into   l_count
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'GROUP'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'END'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id;
+      l_count := counter(i_sql_type        => 'GROUP',
+                         i_execution_point => 'END',
+                         i_reference_id    => i_reference_id
+                        );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -416,19 +868,11 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select d.sql_text
-      into   l_sql_block
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'GROUP'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'END'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id
-      and    d.id = i_current_block_id;
+      l_sql_block := sql_text(i_sql_type         => 'GROUP',
+                              i_execution_point  => 'END',
+                              i_reference_id     => i_reference_id,
+                              i_current_block_id => i_current_block_id
+                             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -474,19 +918,11 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select count(1)
-      into   l_count
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'BEGIN'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id
-      and    h.sub_reference_id = i_sub_reference_id;
+      l_count := counter(i_sql_type         => 'EVENT',
+                         i_execution_point  => 'BEGIN',
+                         i_reference_id     => i_reference_id,
+                         i_sub_reference_id => i_sub_reference_id
+                        );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -534,20 +970,12 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select d.sql_text
-      into   l_sql_block
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'BEGIN'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id
-      and    h.sub_reference_id = i_sub_reference_id
-      and    d.id = i_current_block_id;
+      l_sql_block := sql_text(i_sql_type         => 'EVENT',
+                              i_execution_point  => 'BEGIN',
+                              i_reference_id     => i_reference_id,
+                              i_sub_reference_id => i_sub_reference_id,
+                              i_current_block_id => i_current_block_id
+                             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -593,19 +1021,11 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select count(1)
-      into   l_count
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'END'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id
-      and    h.sub_reference_id = i_sub_reference_id;
+      l_count := counter(i_sql_type         => 'EVENT',
+                         i_execution_point  => 'END',
+                         i_reference_id     => i_reference_id,
+                         i_sub_reference_id => i_sub_reference_id
+                        );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -653,20 +1073,12 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      select d.sql_text
-      into   l_sql_block
-      from   em.helper_sql_headers          h
-      join   em.helper_sql_types            t
-      on     t.id = h.type
-      and    t.description = 'EVENT'
-      join   em.helper_sql_execution_points p
-      on     p.id = h.execution_point_id
-      and    p.description = 'END'
-      join   em.helper_sql_details          d
-      on     d.header_id = h.id
-      where  h.reference_id = i_reference_id
-      and    h.sub_reference_id = i_sub_reference_id
-      and    d.id = i_current_block_id;
+      l_sql_block := sql_text(i_sql_type         => 'EVENT',
+                              i_execution_point  => 'END',
+                              i_reference_id     => i_reference_id,
+                              i_sub_reference_id => i_sub_reference_id,
+                              i_current_block_id => i_current_block_id
+                             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -682,6 +1094,7 @@ is
 
    function build_call(i_group_id            em.event_group_organization_defaults.group_id%type,
                        i_event_definition_id em.event_definitions.id%type,
+                       i_application_id      em.applications.id%type,
                        i_organization_id     em.event_group_organization_defaults.organization_id%type,
                        i_queue_id            em.event_queues.id%type
                       )
@@ -725,6 +1138,12 @@ is
 
       l_helper_count integer;
       l_sql_block    varchar2(32767);
+
+      l_global_block        varchar2(32767);
+      l_application_block   varchar2(32767);
+      l_organization_block  varchar2(32767);
+      l_app_org_block       varchar2(32767);
+
       l_cons_call    clob;
       l_groupb_call  clob;
       l_eventb_call  clob;
@@ -739,11 +1158,40 @@ is
 
       logs.add_parm(l_tt_parms, 'i_group_id', i_group_id);
       logs.add_parm(l_tt_parms, 'i_event_definition_id', i_event_definition_id);
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
       logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
 
       logs.dbg('ENTRY', l_tt_parms);
 
       l_command := 'declare' || chr(10);
+
+      l_helper_count := count_global_block;
+      for each_block in 1 .. l_helper_count
+      loop
+         l_sql_block := global_block(each_block) || chr(10);
+         l_global_block := l_global_block || '   ' || l_sql_block;
+      end loop;
+
+      l_helper_count := count_application_block(i_application_id => i_application_id);
+      for each_block in 1 .. l_helper_count
+      loop
+         l_sql_block := application_block(i_application_id, each_block) || chr(10);
+         l_application_block := l_application_block || '   ' || l_sql_block;
+      end loop;
+
+      l_helper_count := count_organization_block(i_organization_id => i_organization_id);
+      for each_block in 1 .. l_helper_count
+      loop
+         l_sql_block := organization_block(i_organization_id, each_block) || chr(10);
+         l_organization_block := l_organization_block || '   ' || l_sql_block;
+      end loop;
+
+      l_helper_count := count_app_org_block(i_application_id, i_organization_id);
+      for each_block in 1 .. l_helper_count
+      loop
+         l_sql_block := app_org_block(i_application_id, i_organization_id, each_block) || chr(10);
+         l_app_org_block := l_app_org_block || '   ' || l_sql_block;
+      end loop;
 
       l_helper_count := count_event_constructor;
       for each_block in 1 .. l_helper_count
@@ -826,9 +1274,7 @@ is
 
       l_command := l_command || 'begin' || CHR(10);
 
-      l_command := l_command || l_cons_call;
-      l_command := l_command || l_groupb_call;
-      l_command := l_command || l_eventb_call;
+      l_command := l_command || l_global_block || l_application_block || l_organization_block || l_app_org_block || l_cons_call || l_groupb_call || l_eventb_call;
 
       for each_parm in csr_event
       loop
@@ -882,11 +1328,13 @@ is
 
    end build_call;
 
-   procedure push_default(i_group_id        em.event_queues.group_id%type,
-                          i_organization_id em.event_queues.organization_id%type,
-                          i_run_after_tm    em.event_queues.run_after_tm%type default null,
-                          i_user_id         em.event_queues.user_id%type
-                         )
+   procedure push_default
+   (
+      i_group_id        em.event_queues.group_id%type,
+      i_organization_id em.event_queues.organization_id%type,
+      i_run_after_tm    em.event_queues.run_after_tm%type default null,
+      i_user_id         em.event_queues.user_id%type
+   )
    /*
    ||----------------------------------------------------------------------------
    || push_default
@@ -906,9 +1354,11 @@ is
 
       cursor csr_group_events
       is
-      select g.event_definition_id, g.sequence, min(g.sequence) over() min_sequence
-      from   em.group_events g
-      where  g.group_id = i_group_id
+      select g.application_id, e.event_definition_id, e.sequence, min(e.sequence) over() min_sequence
+      from   em.groups       g
+      join   em.group_events e
+      on     e.group_id = g.id
+      where  g.id = i_group_id
       order by sequence;
 
       l_id                em.event_queues.id%type;
@@ -930,6 +1380,7 @@ is
 
          l_value := build_call(i_group_id            => i_group_id,
                                i_event_definition_id => each_ge.event_definition_id,
+                               i_application_id      => each_ge.application_id,
                                i_organization_id     => i_organization_id,
                                i_queue_id            => l_id
                               );
@@ -951,10 +1402,13 @@ is
 
    end push_default;
 
-   procedure pull_default(i_group_id        em.event_queues.group_id%type,
-                          i_organization_id em.event_queues.organization_id%type,
-                          i_user_id         em.event_queues.user_id%type
-                         )
+   procedure pull_default
+   (
+      i_group_id        em.event_queues.group_id%type,
+      i_organization_id em.event_queues.organization_id%type,
+      i_start_tm        em.event_queues.run_after_tm%type,
+      i_user_id         em.event_queues.user_id%type
+   )
    /*
    ||----------------------------------------------------------------------------
    || pull_default
@@ -968,13 +1422,11 @@ is
    ||----------------------------------------------------------------------------
    */
    is
-      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.pull_default';
-
-      l_tt_parms logs.tar_parm;
+      pragma autonomous_transaction;
 
       cursor csr_group_events
       is
-      select e.event_definition_id, e.sequence, min(e.sequence) over() min_sequence, g.cycle_id
+      select g.application_id, e.event_definition_id, e.sequence, min(e.sequence) over() min_sequence, g.cycle_id
       from   em.group_events e
       join   em.groups       g
       on     g.id = e.group_id
@@ -988,18 +1440,17 @@ is
       l_value             clob;
       l_run_after_tm      date;
    begin
-      timer.startme(l_c_module || env.get_session_id);
-
-      logs.add_parm(l_tt_parms, 'i_group_id', i_group_id);
-      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
-      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
-
-      logs.dbg('ENTRY', l_tt_parms);
-
       for each_ge in csr_group_events
       loop
+         if csr_group_events%rowcount = 1
+         then
+            null;
+            /* figure out time based on the cycle and given last_completed_tm */
+            --l_run_after_tm
+         end if;
          l_value := build_call(i_group_id            => i_group_id,
                                i_event_definition_id => each_ge.event_definition_id,
+                               i_application_id      => each_ge.application_id,
                                i_organization_id     => i_organization_id,
                                i_queue_id            => l_id
                               );
@@ -1011,12 +1462,11 @@ is
          returning id into l_previous_queue_id;
       end loop;
 
-      timer.stopme(l_c_module || env.get_session_id);
-      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+      commit;
 
    exception
       when others then
-         logs.err(l_tt_parms);
+         rollback;
 
    end pull_default;
 
@@ -1064,6 +1514,320 @@ is
          rollback;
 
    end change_status;
+
+   procedure remove_block_string
+   (
+      i_id            em.event_queues.id%type,
+      i_before_string varchar2,
+      i_clob          clob,
+      i_user_id       em.event_queues.user_id%type
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || remove_block_string
+   ||   Remove the blocking string and update the queue
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/05 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.remove_block_string';
+
+      l_tt_parms logs.tar_parm;
+
+      l_start_pos  integer;
+      l_return_pos integer;
+      l_end_pos    integer;
+      l_clob       clob;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_id', i_id);
+      logs.add_parm(l_tt_parms, 'i_before_string', i_before_string);
+      logs.add_parm(l_tt_parms, 'i_clob', i_clob);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.info('ENTRY', l_tt_parms);
+
+      l_start_pos := instr(i_clob, i_before_string) + length(i_before_string);
+      l_return_pos := instr(i_clob, 'RETURN;');
+      l_end_pos   := instr(i_clob, 'EM_CODE.EVENT_LOG_PK.init(i_queue_id => i_queue_id);');
+
+      if (    (instr(i_clob, i_before_string) > 0 and l_end_pos > 0)
+          and l_return_pos between l_start_pos and l_end_pos
+         )
+      then
+          l_clob := substr(i_clob, 1, l_start_pos - 1) || substr(i_clob, l_end_pos);
+          l_clob := regexp_replace(l_clob, i_before_string, '');
+      end if;
+
+      update em.event_queues q
+      set    q.value   = l_clob,
+             q.user_id = i_user_id
+      where  q.id = i_id;
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end remove_block_string;
+
+   procedure reset_and_remove_global_block(i_user_id varchar2)
+   /*
+   ||----------------------------------------------------------------------------
+   || reset_and_remove_global_block
+   ||   Reset the queues value and remove from future additions
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/05 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.reset_and_remove_global_block';
+
+      l_tt_parms logs.tar_parm;
+
+      cursor csr_gb(ip_before_string varchar2)
+      is
+      select t.id, t.value
+      from   em.event_queues t
+      where  t.status_id = 1
+      and    dbms_lob.instr(t.value, 'RETURN;') > 1
+      and    dbms_lob.instr(t.value, ip_before_string) > 1
+      order by t.last_change_date;
+
+      l_c_before_string constant varchar2(15) := '--global_block';
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      for each_queue in csr_gb(l_c_before_string)
+      loop
+         remove_block_string(i_id            => each_queue.id,
+                             i_before_string => l_c_before_string,
+                             i_clob          => each_queue.value,
+                             i_user_id       => i_user_id
+                            );
+      end loop;
+
+      HELPER_SQL_PK.remove_global_block(i_user_id => i_user_id);
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end reset_and_remove_global_block;
+
+   procedure reset_and_remove_application_block
+   (
+      i_application_id em.applications.id%type,
+      i_user_id        varchar2
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || reset_and_remove_application_block
+   ||   Reset the queues value and remove from future additions
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/05 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.reset_and_remove_application_block';
+
+      l_tt_parms logs.tar_parm;
+
+      cursor csr_gb(ip_before_string varchar2)
+      is
+      select t.id, t.value
+      from   em.event_queues t
+      join   em.groups       g
+      on     g.id = t.group_id
+      where  t.status_id = 1
+      and    g.application_id = i_application_id
+      and    dbms_lob.instr(t.value, 'RETURN;') > 1
+      and    dbms_lob.instr(t.value, ip_before_string) > 1
+      order by t.last_change_date;
+
+      l_c_before_string constant varchar2(15) := '--application_block';
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      for each_queue in csr_gb(l_c_before_string)
+      loop
+         remove_block_string(i_id            => each_queue.id,
+                             i_before_string => l_c_before_string,
+                             i_clob          => each_queue.value,
+                             i_user_id       => i_user_id
+                            );
+      end loop;
+
+      HELPER_SQL_PK.remove_application_block(i_application_id => i_application_id, i_user_id => i_user_id);
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end reset_and_remove_application_block;
+
+   procedure reset_and_remove_organization_block
+   (
+      i_organization_id em.organizations.id%type,
+      i_user_id        varchar2
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || reset_and_remove_organization_block
+   ||   Reset the queues value and remove from future additions
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/05 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.reset_and_remove_organization_block';
+
+      l_tt_parms logs.tar_parm;
+
+      cursor csr_gb(ip_before_string varchar2)
+      is
+      select t.id, t.value
+      from   em.event_queues t
+      where  t.status_id = 1
+      and    t.organization_id = i_organization_id
+      and    dbms_lob.instr(t.value, 'RETURN;') > 1
+      and    dbms_lob.instr(t.value, ip_before_string) > 1
+      order by t.last_change_date;
+
+      l_c_before_string constant varchar2(15) := '--organization_block';
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      for each_queue in csr_gb(l_c_before_string)
+      loop
+         remove_block_string(i_id            => each_queue.id,
+                             i_before_string => l_c_before_string,
+                             i_clob          => each_queue.value,
+                             i_user_id       => i_user_id
+                            );
+      end loop;
+
+      HELPER_SQL_PK.remove_organization_block(i_organization_id => i_organization_id, i_user_id => i_user_id);
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end reset_and_remove_organization_block;
+
+   procedure reset_and_remove_app_org_block
+   (
+      i_application_id  em.applications.id%type,
+      i_organization_id em.organizations.id%type,
+      i_user_id         varchar2
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || reset_and_remove_app_org_block
+   ||   Reset the queues value and remove from future additions
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/05 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.reset_and_remove_app_org_block';
+
+      l_tt_parms logs.tar_parm;
+
+      cursor csr_gb(ip_before_string varchar2)
+      is
+      select t.id, t.value
+      from   em.event_queues t
+      join   em.groups       g
+      on     g.id = t.group_id
+      where  t.status_id = 1
+      and    g.application_id  = i_application_id
+      and    t.organization_id = i_organization_id
+      and    dbms_lob.instr(t.value, 'RETURN;') > 1
+      and    dbms_lob.instr(t.value, ip_before_string) > 1
+      order by t.last_change_date;
+
+      l_c_before_string constant varchar2(15) := '--app_org_block';
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
+      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      for each_queue in csr_gb(l_c_before_string)
+      loop
+         remove_block_string(i_id            => each_queue.id,
+                             i_before_string => l_c_before_string,
+                             i_clob          => each_queue.value,
+                             i_user_id       => i_user_id
+                            );
+      end loop;
+
+      HELPER_SQL_PK.remove_app_org_block(i_application_id => i_application_id, i_organization_id => i_organization_id, i_user_id => i_user_id);
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end reset_and_remove_app_org_block;
 
 end QUEUE_PK;
 /
