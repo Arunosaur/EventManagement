@@ -1,4 +1,4 @@
-create package         GROUP_EVENT_PK
+CREATE OR REPLACE PACKAGE EM_CODE.GROUP_EVENT_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : GROUP_EVENT_PK
@@ -43,4 +43,3 @@ is
 
 end GROUP_EVENT_PK;
 /
-

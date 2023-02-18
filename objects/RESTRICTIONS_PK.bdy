@@ -1,4 +1,4 @@
-create package body         RESTRICTIONS_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.RESTRICTIONS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : RESTRICTIONS_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_group';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -164,7 +164,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_event';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -297,7 +297,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_group_event';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -430,7 +430,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_event_group';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -550,4 +550,3 @@ is
 
 end RESTRICTIONS_PK;
 /
-

@@ -1,10 +1,10 @@
-CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
+CREATE OR REPLACE PACKAGE EM_CODE.CYCLE_EVALUATOR_PK
 /*
 ||---------------------------------------------------------------------------------
-|| NAME                : MANAGER_PK
+|| NAME                : CYCLE_EVALUATOR_PK
 || CREATED BY          : Arun S. Rajagopalan
-|| CREATE DATE         : Jan, 27th 2023
-|| DESCRIPTION         : To manage events
+|| CREATE DATE         : Feb, 07th 2023
+|| DESCRIPTION         : To maintain cycles
 ||---------------------------------------------------------------------------------
 || CHANGELOG
 ||---------------------------------------------------------------------------------
@@ -16,11 +16,12 @@ CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
 */
 is
 
-   procedure disseminate
+   function sub_cycle
    (
-      i_dc_id   integer,
-      i_user_id varchar2
-   );
+      i_cycle_id em.cycles.id%type,
+      i_date     date
+   )
+   return date;
 
-end MANAGER_PK;
+end CYCLE_EVALUATOR_PK;
 /

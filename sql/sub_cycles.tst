@@ -1,0 +1,633 @@
+PL/SQL Developer Test script 3.0
+629
+-- Created on 2/12/2023 by ASRAJAG 
+declare
+   l_cycle_id em.cycles.id%type;
+   l_date date := date '2023-01-01';
+   l_count integer;
+
+   l_is_inside boolean;
+
+   type rt_date is record
+   (id               integer,
+    description      varchar2(15),
+    approximate_date date
+   );
+
+   l_dy_next_date    rt_date;
+   l_wy_next_date    rt_date;
+   l_my_next_date    rt_date;
+   l_dm_next_date    rt_date;
+   l_wm_next_date    rt_date;
+   l_dw_next_date    rt_date;
+
+   l_projected_date  date;
+
+   function get_day_of_the_year(i_cycle_id em.cycles.id%type,
+                                i_date     date
+                               )
+   return rt_date
+   is
+      l_next_cycle rt_date;
+   begin
+      with
+         input_date as
+            (select to_char(i_date, 'DDD') day_id
+             from   dual
+            ),
+         year_begin as
+            (select trunc(i_date, 'YYYY') current_year, trunc(i_date, 'YYYY') + interval '1' year next_year
+             from   dual
+            ),
+         sub_cycles as
+            (select cycle_id, y.day_id, nvl(lead(y.day_id) over(partition by y.cycle_id order by y.day_id), min(y.day_id) over(partition by y.cycle_id)) lg_day_id,
+                    min(y.day_id) over(partition by y.cycle_id) min_day_id, max(y.day_id) over(partition by y.cycle_id) max_day_id, count(1) over(partition by y.cycle_id) cnt_days
+             from   em.sub_cycle_days_in_an_year y
+             where  y.cycle_id = i_cycle_id
+            )
+         select (case
+                    when cnt_days = 1
+                    then
+                       case
+                          when c.day_id > i.day_id
+                          then
+                             (current_year - 1) + c.day_id
+                          else
+                             (next_year - 1) + c.day_id
+                       end
+                    else
+                       case
+                          when (    i.day_id >= c.day_id
+                                and i.day_id < c.lg_day_id
+                               )
+                          then
+                             (current_year - 1) + c.lg_day_id
+                          when (    i.day_id < c.min_day_id
+                                and c.day_id = c.min_day_id
+                               )
+                          then
+                             (current_year - 1) + c.min_day_id
+                          when (    i.day_id >= c.max_day_id
+                                and c.lg_day_id < c.day_id
+                               )
+                          then
+                             (next_year - 1) + c.min_day_id
+                       end
+                 end
+                ) next_date,
+                (case
+                    when cnt_days = 1
+                    then
+                       c.day_id
+                    else
+                       case
+                          when (    i.day_id >= c.day_id
+                                and i.day_id < c.lg_day_id
+                               )
+                          then
+                             c.lg_day_id
+                          else
+                             c.min_day_id
+                       end
+                 end
+                ) day_id
+         into   l_next_cycle.approximate_date, l_next_cycle.id
+         from   sub_cycles c
+         join   input_date i
+         on     1 = 1
+         join   year_begin b
+         on     1 = 1
+         where  cnt_days = 1
+         or     (    i.day_id >= c.day_id
+                 and i.day_id < c.lg_day_id
+                )
+         or     (    i.day_id < c.min_day_id
+                 and c.day_id = c.min_day_id
+                )
+         or     (    i.day_id >= c.max_day_id
+                 and c.lg_day_id < c.day_id
+                );
+
+      return l_next_cycle;
+   exception
+      when others then
+         return null;
+
+   end get_day_of_the_year;
+
+   function get_week_of_the_year(i_cycle_id em.cycles.id%type,
+                                 i_date     date
+                                )
+   return rt_date
+   is
+      l_next_cycle rt_date;
+   begin
+      with
+         input_date as
+            (select to_char(i_date, 'WW') week_id
+             from   dual
+            ),
+         year_begin as
+            (select trunc(i_date, 'YYYY') current_year, trunc(i_date, 'YYYY') + interval '1' year next_year
+             from   dual
+            ),
+         sub_cycles as
+            (select cycle_id, y.week_id, nvl(lead(y.week_id) over(partition by y.cycle_id order by y.week_id), min(y.week_id) over(partition by y.cycle_id)) lg_week_id,
+                    min(y.week_id) over(partition by y.cycle_id) min_week_id, max(y.week_id) over(partition by y.cycle_id) max_week_id, count(1) over(partition by y.cycle_id) cnt_weeks
+             from   em.sub_cycle_weeks_in_a_year y
+             where  y.cycle_id = i_cycle_id
+            )
+         select (case
+                    when cnt_weeks = 1
+                    then
+                       case
+                          when c.week_id > i.week_id
+                          then
+                             (current_year - 1) + ((c.week_id - 1) * 7)
+                          else
+                             (next_year - 1) + ((c.week_id - 1) * 7)
+                       end
+                    else
+                       case
+                          when (    i.week_id >= c.week_id
+                                and i.week_id < c.lg_week_id
+                               )
+                          then
+                             (current_year - 1) + ((c.lg_week_id - 1) * 7)
+                          when (    i.week_id < c.min_week_id
+                                and c.week_id = c.min_week_id
+                               )
+                          then
+                             (current_year - 1) + ((c.min_week_id - 1) * 7)
+                          when (    i.week_id >= c.max_week_id
+                                and c.lg_week_id < c.week_id
+                               )
+                          then
+                             (next_year - 1) + ((c.min_week_id - 1) * 7)
+                       end
+                 end
+                ) next_date,
+                (case
+                    when cnt_weeks = 1
+                    then
+                       c.week_id
+                    else
+                       case
+                          when (    i.week_id >= c.week_id
+                                and i.week_id < c.lg_week_id
+                               )
+                          then
+                             c.lg_week_id
+                          else
+                             c.min_week_id
+                       end
+                 end
+                ) week_id
+         into   l_next_cycle.approximate_date, l_next_cycle.id
+         from   sub_cycles c
+         join   input_date i
+         on     1 = 1
+         join   year_begin b
+         on     1 = 1
+         where  cnt_weeks = 1
+         or     (    i.week_id >= c.week_id
+                 and i.week_id < c.lg_week_id
+                )
+         or     (    i.week_id < c.min_week_id
+                 and c.week_id = c.min_week_id
+                )
+         or     (    i.week_id >= c.max_week_id
+                 and c.lg_week_id < c.week_id
+                );
+
+      return l_next_cycle;
+   exception
+      when others then
+         return null;
+
+   end get_week_of_the_year;
+
+   function get_month_of_the_year(i_cycle_id em.cycles.id%type,
+                                  i_date     date
+                                 )
+   return rt_date
+   is
+      l_next_cycle rt_date;
+   begin
+      with
+         input_date as
+            (select to_char(i_date, 'MM') month_id, trunc(i_date, 'MM') dt
+             from   dual
+            ),
+         year_begin as
+            (select trunc(i_date, 'YYYY') + interval '1' year next_year
+             from   dual
+            ),
+         sub_cycles as
+            (select cycle_id, y.month_id, nvl(lead(y.month_id) over(partition by y.cycle_id order by y.month_id), min(y.month_id) over(partition by y.cycle_id)) lg_month_id,
+                    min(y.month_id) over(partition by y.cycle_id) min_month_id, max(y.month_id) over(partition by y.cycle_id) max_month_id, count(1) over(partition by y.cycle_id) cnt_months
+             from   em.sub_cycle_months y
+             where  y.cycle_id = i_cycle_id
+            )
+         select (case
+                    when cnt_months = 1
+                    then
+                       case
+                          when c.month_id >= i.month_id
+                          then
+                             add_months(i.dt, c.lg_month_id - i.month_id)
+                          else
+                             add_months(next_year, c.lg_month_id - 1)
+                       end
+                    else
+                       case
+                          when i.month_id = c.month_id
+                          then
+                              i.dt
+                          when (    i.month_id > c.month_id
+                                and i.month_id < c.lg_month_id
+                               )
+                          then
+                             add_months(i.dt, (c.lg_month_id - i.month_id))
+                          when (    i.month_id >= c.max_month_id
+                                and c.lg_month_id < c.month_id
+                               )
+                          then
+                             add_months(next_year, c.lg_month_id - 1)
+                          when i.month_id < c.month_id
+                          and  c.month_id = min_month_id
+                          then
+                             add_months(i.dt, c.month_id - i.month_id)
+                       end
+                 end
+                ) next_date,
+                (case
+                    when cnt_months = 1
+                    then
+                       c.month_id
+                    else
+                       case
+                          when i.month_id = c.month_id
+                          then
+                              c.month_id
+                          when (    i.month_id > c.month_id
+                                and i.month_id <= c.lg_month_id
+                               )
+                          then
+                             c.lg_month_id
+                          else
+                             c.min_month_id
+                       end
+                 end
+                ) month_id
+         into   l_next_cycle.approximate_date, l_next_cycle.id
+         from   sub_cycles c
+         join   input_date i
+         on     1 = 1
+         join   year_begin b
+         on     1 = 1
+         where  cnt_months = 1
+         or     i.month_id = c.month_id
+         or     (    i.month_id > c.month_id
+                 and i.month_id < c.lg_month_id
+                )
+         or     (    i.month_id >= c.max_month_id
+                 and c.lg_month_id < c.month_id
+                )
+         or     (    i.month_id < c.month_id
+                 and c.month_id = c.min_month_id
+                );
+
+      return l_next_cycle;
+   exception
+      when others then
+         return null;
+
+   end get_month_of_the_year;
+
+   function get_day_of_the_month(i_cycle_id em.cycles.id%type,
+                                 i_date     date
+                                )
+   return rt_date
+   is
+      l_next_cycle rt_date;
+   begin
+      with
+         input_date as
+            (select to_char(i_date, 'DD') day_id, trunc(i_date, 'MM') dt, last_day(trunc(i_date, 'MM')) next_dt
+             from   dual
+            ),
+         year_begin as
+            (select trunc(i_date, 'YYYY') + interval '1' year next_year
+             from   dual
+            ),
+         sub_cycles as
+            (select cycle_id, y.day_id, nvl(lead(y.day_id) over(partition by y.cycle_id order by y.day_id), min(y.day_id) over(partition by y.cycle_id)) lg_day_id,
+                    min(y.day_id) over(partition by y.cycle_id) min_day_id, max(y.day_id) over(partition by y.cycle_id) max_day_id, count(1) over(partition by y.cycle_id) cnt_days
+             from   em.sub_cycle_days_in_a_month y
+             where  y.cycle_id = i_cycle_id
+            )
+         select (case
+                    when cnt_days = 1
+                    then
+                       case
+                          when c.day_id > i.day_id
+                          then
+                             (dt - 1) + c.day_id
+                          else
+                             next_dt + c.day_id
+                       end
+                    else
+                       case
+                          when (    i.day_id >= c.day_id
+                                and i.day_id < c.lg_day_id
+                               )
+                          then
+                             (dt - 1) + c.lg_day_id
+                          when (    i.day_id < c.min_day_id
+                                and c.day_id < c.lg_day_id
+                               )
+                          then
+                             dt + c.min_day_id
+                          when (    i.day_id >= c.max_day_id
+                                and c.lg_day_id < c.day_id
+                               )
+                          then
+                             case
+                                when to_char(i_date, 'MM') = to_char((next_year - 1), 'MM')
+                                then
+                                   (next_year - 1) + c.min_day_id
+                                else
+                                   next_dt + c.lg_day_id
+                             end
+                       end
+                 end
+                ) next_date,
+                (case
+                    when cnt_days = 1
+                    then
+                       c.day_id
+                    else
+                       case
+                          when (    i.day_id >= c.day_id
+                                and i.day_id < c.lg_day_id
+                               )
+                          then
+                             c.lg_day_id
+                          else
+                             c.min_day_id
+                       end
+                 end
+                ) day_id
+         into   l_next_cycle.approximate_date, l_next_cycle.id
+         from   sub_cycles c
+         join   input_date i
+         on     1 = 1
+         join   year_begin b
+         on     1 = 1
+         where  cnt_days = 1
+         or     (    i.day_id >= c.day_id
+                 and i.day_id < c.lg_day_id
+                )
+         or     (    i.day_id < c.min_day_id
+                 and c.day_id < c.lg_day_id
+                )
+         or     (    i.day_id >= c.max_day_id
+                 and c.lg_day_id < c.day_id
+                );
+
+      return l_next_cycle;
+   exception
+      when others then
+         return null;
+
+   end get_day_of_the_month;
+
+   function get_week_of_the_month(i_cycle_id em.cycles.id%type,
+                                  i_date     date
+                                 )
+   return rt_date
+   is
+      l_next_cycle rt_date;
+   begin
+      with
+         input_date as
+            (select to_char(i_date, 'W') week_id, trunc(i_date, 'MM') dt 
+             from   dual
+            ),
+         year_begin as
+            (select trunc(i_date, 'YYYY') + interval '1' year next_year
+             from   dual
+            ),
+         sub_cycles as
+            (select cycle_id, y.week_id, nvl(lead(y.week_id) over(partition by y.cycle_id order by y.week_id), min(y.week_id) over(partition by y.cycle_id)) lg_week_id,
+                    min(y.week_id) over(partition by y.cycle_id) min_week_id, max(y.week_id) over(partition by y.cycle_id) max_week_id, count(1) over(partition by y.cycle_id) cnt_weeks
+             from   em.sub_cycle_weeks_in_a_month y
+             where  y.cycle_id = i_cycle_id
+            )
+         select (case
+                    when cnt_weeks = 1
+                    then
+                       case
+                          when c.week_id > i.week_id
+                          then
+                             dt + ((c.week_id - 1) * 7)
+                          when c.week_id <= i.week_id
+                          then
+                             case
+                                when to_char(dt, 'MM') = to_char((next_year - 1), 'MM')
+                                then
+                                   case
+                                      when c.week_id = i.week_id
+                                      then
+                                         dt + ((c.week_id - 1) * 7)
+                                      else
+                                         next_year + ((c.week_id - 1) * 7)
+                                   end
+                                when c.week_id < i.week_id
+                                then
+                                   add_months(dt, 1) + ((c.week_id - 1) * 7)
+                                else
+                                   dt + ((c.week_id - 1) * 7)
+                             end
+                       end
+                    else
+                       case
+                          when (    i.week_id > c.week_id
+                                and i.week_id <= c.lg_week_id
+                               )
+                          then
+                             dt + ((c.lg_week_id - 1) * 7)
+                          when (    i.week_id <= c.min_week_id
+                                and c.week_id <= c.lg_week_id
+                               )
+                          then
+                             dt + ((c.min_week_id - 1) * 7)
+                          when (    i.week_id > c.max_week_id
+                                and c.lg_week_id < c.week_id
+                               )
+                          then
+                             case
+                                when to_char(dt, 'MM') = to_char((next_year - 1), 'MM')
+                                then
+                                   next_year + ((c.min_week_id - 1) * 7)
+                                else
+                                   add_months(dt, 1) + ((c.min_week_id - 1) * 7)
+                             end
+                       end
+                 end
+                ) next_date,
+                c.week_id
+         into   l_next_cycle.approximate_date, l_next_cycle.id
+         from   sub_cycles c
+         join   input_date i
+         on     1 = 1
+         join   year_begin b
+         on     1 = 1
+         where  cnt_weeks = 1
+         or     (    i.week_id > c.week_id
+                 and i.week_id <= c.lg_week_id
+                )
+         or     (    i.week_id <= c.min_week_id
+                 and c.week_id <= c.lg_week_id
+                )
+         or     (    i.week_id > c.max_week_id
+                 and c.lg_week_id < c.week_id
+                );
+
+      return l_next_cycle;
+   exception
+      when others then
+         return null;
+
+   end get_week_of_the_month;
+
+   function get_day_of_the_week(i_cycle_id em.cycles.id%type,
+                                i_date     date
+                               )
+   return rt_date
+   is
+      l_next_cycle rt_date;
+   begin
+      select min(next_day(i_date, c.day_id)), to_char(min(next_day(i_date, c.day_id)), 'D') day_id, to_char(min(next_day(i_date, c.day_id)), 'DY') day_desc
+      into   l_next_cycle.approximate_date, l_next_cycle.id, l_next_cycle.description
+      from   em.sub_cycle_days_of_the_week c
+      where  c.cycle_id = i_cycle_id;
+
+      return l_next_cycle;
+   exception
+      when others then
+         return null;
+
+   end get_day_of_the_week;
+
+begin
+   DBMS_OUTPUT.put_line('Date: ' || l_date);
+   for each_cycle in (select c.id, c.code, c.description
+                      from   em.cycles c
+                      where  exists (select 1 from em.sub_cycle_days_in_an_year y where y.cycle_id = c.id)
+                      or     exists (select 1 from em.sub_cycle_weeks_in_a_year x where x.cycle_id = c.id)
+                      or     exists (select 1 from em.sub_cycle_months m where m.cycle_id = c.id)
+                      or     exists (select 1 from em.sub_cycle_days_in_a_month m where m.cycle_id = c.id)
+                      or     exists (select 1 from em.sub_cycle_weeks_in_a_month z where z.cycle_id = c.id)
+                      or     exists (select 1 from em.sub_cycle_days_of_the_week w where w.cycle_id = c.id)
+                      or     exists (select 1 from em.sub_cycle_time_in_a_day e where e.cycle_id = c.id)
+                      order by c.id
+                     )
+   loop
+      DBMS_OUTPUT.put_line('Cycle: ' || each_cycle.id || ' - ' || each_cycle.code || ' - ' || each_cycle.description);
+      DBMS_OUTPUT.put_line('***************************************************************************************');
+      l_cycle_id := each_cycle.id;
+      l_count := 0;
+      l_is_inside := false;
+      l_dy_next_date := get_day_of_the_year(i_cycle_id => l_cycle_id, i_date => l_date);
+      if l_dy_next_date.id is not null
+      then
+         l_count := l_count + 1;
+         DBMS_OUTPUT.put_line('Day of the Year: ' || l_dy_next_date.id || ' - ' || l_dy_next_date.approximate_date);
+      end if;
+      l_wy_next_date := get_week_of_the_year(i_cycle_id => l_cycle_id, i_date => l_date);
+      if l_wy_next_date.id is not null
+      then
+         l_count := l_count + 1;
+         DBMS_OUTPUT.put_line('Week of the Year: ' || l_wy_next_date.id || ' - ' || l_wy_next_date.approximate_date);
+      end if;
+      l_my_next_date := get_month_of_the_year(i_cycle_id => l_cycle_id, i_date => l_date);
+      if l_my_next_date.id is not null
+      then
+         l_count := l_count + 1;
+         DBMS_OUTPUT.put_line('Month of the Year: ' || l_my_next_date.id || ' - ' || l_my_next_date.approximate_date);
+      end if;
+      l_dm_next_date := get_day_of_the_month(i_cycle_id => l_cycle_id, i_date => l_date);
+      if l_dm_next_date.id is not null
+      then
+         l_count := l_count + 1;
+         DBMS_OUTPUT.put_line('Day of the Month: ' || l_dm_next_date.id || ' - ' || l_dm_next_date.approximate_date);
+      end if;
+      l_wm_next_date := get_week_of_the_month(i_cycle_id => l_cycle_id, i_date => l_date);
+      if l_wm_next_date.id is not null
+      then
+         l_count := l_count + 1;
+         DBMS_OUTPUT.put_line('Week of the Month: ' || l_wm_next_date.id || ' - ' || l_wm_next_date.approximate_date);
+      end if;
+      l_dw_next_date := get_day_of_the_week(i_cycle_id => l_cycle_id, i_date => l_date);
+      if l_dw_next_date.id is not null
+      then
+         l_count := l_count + 1;
+         DBMS_OUTPUT.put_line('Day of the Week: ' || l_dw_next_date.id || ' - ' || l_dw_next_date.approximate_date);
+      end if;
+      if l_count = 1
+      then
+         l_projected_date := coalesce(l_dy_next_date.approximate_date, l_wy_next_date.approximate_date, l_my_next_date.approximate_date,
+                                      l_dm_next_date.approximate_date, l_wm_next_date.approximate_date, l_dw_next_date.approximate_date
+                                     );
+      elsif l_dw_next_date.id is not null
+      then
+         if l_wm_next_date.id is not null
+         then
+            if l_my_next_date.id is not null
+            then
+               l_projected_date := case
+                                      when to_char(l_my_next_date.approximate_date, 'D') = l_dw_next_date.id
+                                      then
+                                         l_my_next_date.approximate_date + ((l_wm_next_date.id - 1) * 7)
+                                      else
+                                         next_day(l_my_next_date.approximate_date + ((l_wm_next_date.id - 1) * 7), l_dw_next_date.description)
+                                   end;
+            else 
+               l_projected_date := case
+                                      when to_char(l_wm_next_date.approximate_date, 'D') = l_dw_next_date.id
+                                      then
+                                         l_wm_next_date.approximate_date
+                                      else
+                                         next_day(l_wm_next_date.approximate_date, l_dw_next_date.description)
+                                  end;
+            end if;
+         elsif l_wy_next_date.id is not null
+         then
+            l_projected_date := case
+                                   when to_char(l_wy_next_date.approximate_date, 'D') = l_dw_next_date.id
+                                   then
+                                      l_wy_next_date.approximate_date
+                                   else
+                                      next_day(l_wy_next_date.approximate_date, l_dw_next_date.description)
+                                end;
+         end if;
+      elsif l_dm_next_date.id is not null
+      then
+         if l_my_next_date.id is not null
+         then
+            l_projected_date := l_my_next_date.approximate_date + (l_dm_next_date.id - 1);
+         end if;
+      end if;
+
+      if l_projected_date is not null
+      then
+         DBMS_OUTPUT.put_line('Given Date: ' || l_date || ' -> ' || l_projected_date);
+      end if;
+
+      DBMS_OUTPUT.put_line('----------------------------------------------------------------------------------------');
+   end loop;
+end;
+0
+0

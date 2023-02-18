@@ -1,4 +1,4 @@
-create package body         CYCLE_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.CYCLE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : CYCLE_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'CYCLE_PK.get';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -203,4 +203,3 @@ is
 
 end CYCLE_PK;
 /
-

@@ -1,4 +1,4 @@
-create package         QUEUE_PK
+CREATE OR REPLACE PACKAGE EM_CODE.QUEUE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : QUEUE_PK
@@ -21,7 +21,7 @@ is
       i_group_id        em.event_queues.group_id%type,
       i_organization_id em.event_queues.organization_id%type,
       i_run_after_tm    em.event_queues.run_after_tm%type default null,
-      i_user_id         em.event_queues.user_id%type
+      i_user_id         em.event_queues.create_user_id%type
    );
 
    procedure pull_default
@@ -29,14 +29,14 @@ is
       i_group_id        em.event_queues.group_id%type,
       i_organization_id em.event_queues.organization_id%type,
       i_start_tm        em.event_queues.run_after_tm%type,
-      i_user_id         em.event_queues.user_id%type
+      i_user_id         em.event_queues.create_user_id%type
    );
 
    procedure change_status
    (
       i_id        em.event_queues.id%type,
       i_to_status em.event_queue_status.description%type,
-      i_user_id   em.event_queues.user_id%type
+      i_user_id   em.event_queues.last_update_user_id%type
    );
 
    procedure reset_and_remove_global_block(i_user_id varchar2);
@@ -62,4 +62,3 @@ is
 
 end QUEUE_PK;
 /
-

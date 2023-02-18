@@ -1,4 +1,4 @@
-create package         CYCLE_PK
+CREATE OR REPLACE PACKAGE EM_CODE.CYCLE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : CYCLE_PK
@@ -42,4 +42,3 @@ is
 
 end CYCLE_PK;
 /
-

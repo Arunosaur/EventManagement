@@ -1,4 +1,4 @@
-create package         APPLICATION_PK
+CREATE OR REPLACE PACKAGE EM_CODE.APPLICATION_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : APPLICATION_PK
@@ -46,4 +46,3 @@ is
 
 end APPLICATION_PK;
 /
-

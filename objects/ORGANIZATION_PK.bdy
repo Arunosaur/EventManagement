@@ -1,4 +1,4 @@
-create package body         ORGANIZATION_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.ORGANIZATION_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : ORGANIZATION_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'ORGANIZATION_PK.get';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -269,4 +269,3 @@ is
 
 end ORGANIZATION_PK;
 /
-

@@ -1,4 +1,4 @@
-create package body         MANAGER_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.MANAGER_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : MANAGER_PK
@@ -16,12 +16,48 @@ create package body         MANAGER_PK
 */
 is
 
+   function is_blocked(i_clob clob)
+   return boolean
+   /*
+   ||----------------------------------------------------------------------------
+   || is_blocked
+   ||   Check if execution is blocked...
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/04 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_return_pos number;
+      l_end_pos    number;
+      l_is_blocked boolean := false;
+   begin
+      l_return_pos := instr(i_clob, 'RETURN;');
+      l_end_pos := instr(i_clob, 'EM_CODE.EVENT_LOG_PK.init(i_queue_id => i_queue_id);');
+      if (    l_return_pos > 0
+          and l_return_pos < l_end_pos
+         )
+      then
+         l_is_blocked := true;
+      end if;
+
+      return l_is_blocked;
+
+   exception
+      when others then
+         return true;
+
+   end is_blocked;
+
    procedure lock_group
    (
       i_organization_id em.event_queues.organization_id%type,
       i_group_id        em.event_queues.group_id%type,
       i_queue_id        em.event_queues.id%type,
-      i_user_id         em.event_queues.user_id%type
+      i_user_id         em.event_queues.last_update_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -38,7 +74,7 @@ is
    is
       cursor csr_event_queues
       is
-      select q.id
+      select q.id, q.value
       from   em.event_queues q
       where  q.group_id = i_group_id
       and    q.organization_id = i_organization_id
@@ -48,11 +84,12 @@ is
    begin
       for each_row in csr_event_queues
       loop
+         exit when is_blocked(each_row.value);
+
          QUEUE_PK.change_status(i_id        => each_row.id,
                                 i_to_status => 'Locked',
                                 i_user_id   => i_user_id
                                );
-DBMS_OUTPUT.put_line('Lock: ' || i_organization_id || ' : ' || i_group_id || ' - ' || i_queue_id || ' : ' || i_user_id);
       end loop;
 
    exception
@@ -66,7 +103,7 @@ DBMS_OUTPUT.put_line('Lock: ' || i_organization_id || ' : ' || i_group_id || ' -
       i_organization_id em.event_queues.organization_id%type,
       i_group_id        em.event_queues.group_id%type,
       i_queue_id        em.event_queues.id%type,
-      i_user_id         em.event_queues.user_id%type
+      i_user_id         em.event_queues.last_update_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -97,7 +134,6 @@ DBMS_OUTPUT.put_line('Lock: ' || i_organization_id || ' : ' || i_group_id || ' -
                                 i_to_status => 'New',
                                 i_user_id   => i_user_id
                                );
-DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || ' - ' || i_queue_id || ' : ' || i_user_id);
       end loop;
 
    exception
@@ -134,7 +170,8 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
    (
       i_organization_id     em.event_queues.organization_id%type,
       i_group_id            em.groups.id%type,
-      i_event_definition_id em.event_definitions.id%type
+      i_event_definition_id em.event_definitions.id%type,
+      i_queue_id            em.event_queues.id%type
    )
    return boolean
    /*
@@ -194,8 +231,25 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
             join   em.event_restrictions g
             on     g.event_id = e.event_definition_id
             and    g.restricted_event_id = i_event_definition_id
+           ),
+        count_self_restrictions as
+           (select count(1) cnt
+            from   em.event_queues q
+            where  q.id = i_queue_id
+            and    exists (select 1
+                           from   em.event_queues e
+                           where  e.event_definition_id = q.event_definition_id
+                           and    e.organization_id = q.organization_id
+                           and    e.id != q.id
+                          )
+            and    exists (select 1
+                           from   em.event_queues g
+                           where  g.group_id = q.group_id
+                           and    g.organization_id = q.organization_id
+                           and    g.id != q.id
+                          )
            )
-        select (q.cnt + r.cnt + s.cnt + t.cnt + u.cnt)
+        select (q.cnt + r.cnt + s.cnt + t.cnt + u.cnt + v.cnt)
         into   l_count
         from   count_wip_queues               q
         join   count_group_restrictions       r
@@ -205,6 +259,8 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
         join   count_event_group_restrictions t
         on     1 = 1
         join   count_event_restrictions       u
+        on     1 = 1
+        join   count_self_restrictions        v
         on     1 = 1;
 
       return (l_count > 0);
@@ -218,7 +274,8 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
    procedure operate
    (
       i_queue_id em.event_queues.id%type,
-      i_user_id  em.event_queues.user_id%type
+      i_start_tm em.event_queues.run_after_tm%type,
+      i_user_id  em.event_queues.last_update_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -235,10 +292,14 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
    is
       cursor csr_event_queues
       is
-      select q.id, q.previous_id, q.value, q.organization_id, q.group_id, q.event_definition_id
-      from   em.event_queues q
+      select q.id, q.previous_id, q.value, q.organization_id, q.group_id, q.event_definition_id, decode(c.code, 'ON_DEMAND', 'N', 'Y') is_cycle, connect_by_isleaf is_leaf
+      from   em.event_queues       q
       join   em.event_queue_status s
       on     s.id = q.status_id
+      join   em.groups             g
+      on     g.id = q.group_id
+      join   em.cycles             c
+      on     c.id = g.cycle_id
       where  s.description = 'Locked'
       start with q.id = i_queue_id
       connect by prior q.id = q.previous_id;
@@ -250,7 +311,8 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
          begin
             if is_event_restricted(i_organization_id     => each_queue.organization_id,
                                    i_group_id            => each_queue.group_id,
-                                   i_event_definition_id => each_queue.event_definition_id
+                                   i_event_definition_id => each_queue.event_definition_id,
+                                   i_queue_id            => each_queue.id
                                   )
             then
                if each_queue.previous_id is null
@@ -267,7 +329,8 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
                      DBMS_SESSION.sleep(10);
                      exit wip when not is_event_restricted(i_organization_id     => each_queue.organization_id,
                                                            i_group_id            => each_queue.group_id,
-                                                           i_event_definition_id => each_queue.event_definition_id
+                                                           i_event_definition_id => each_queue.event_definition_id,
+                                                           i_queue_id            => each_queue.id
                                                           );
                   end loop wip;
                end if;
@@ -284,6 +347,19 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
                                    i_to_status => 'Completed',
                                    i_user_id   => i_user_id
                                   );
+
+            if (    i_start_tm is not null
+                and each_queue.is_cycle = 'Y'
+                and each_queue.is_leaf = 1
+               )
+            then
+               QUEUE_PK.pull_default(i_group_id        => each_queue.group_id,
+                                     i_organization_id => each_queue.organization_id,
+                                     i_start_tm        => i_start_tm,
+                                     i_user_id         => i_user_id
+                                    );
+            end if;
+
          exception
             when others then
                QUEUE_PK.change_status(i_id        => each_queue.id,
@@ -321,7 +397,11 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
 
       cursor csr_group_events
       is
-      select o.id organization_id, first_value(q.id) over(order by q.last_change_date) queue_id, first_value(group_id) over(order by q.last_change_date) group_id, count(distinct group_id) over() distinct_groups
+      select o.id organization_id,
+             first_value(q.id) over(order by q.create_date) queue_id,
+             first_value(q.group_id) over(order by q.create_date) group_id,
+             first_value(q.run_after_tm) over(order by q.create_date) run_after_tm,
+             count(distinct group_id) over() distinct_groups
       from   em.organizations      o
       join   em.event_queues       q
       on     q.organization_id = o.id
@@ -339,7 +419,6 @@ DBMS_OUTPUT.put_line('UnLock: ' || i_organization_id || ' : ' || i_group_id || '
       <<disseminator>>
       for each_row in csr_group_events
       loop
-DBMS_OUTPUT.put_line('Disseminate ' || each_row.organization_id || ' : ' || each_row.group_id || ' - ' || each_row.queue_id || ' : ' || i_user_id);
          lock_group(i_organization_id => each_row.organization_id,
                     i_group_id        => each_row.group_id,
                     i_queue_id        => each_row.queue_id,
@@ -351,7 +430,10 @@ DBMS_OUTPUT.put_line('Disseminate ' || each_row.organization_id || ' : ' || each
             notify_job_manager(i_dc_id);
          end if;
 
-         operate(i_queue_id => each_row.queue_id, i_user_id => i_user_id);
+         operate(i_queue_id => each_row.queue_id,
+                 i_start_tm => each_row.run_after_tm,
+                 i_user_id  => i_user_id
+                );
 
       end loop disseminator;
 
@@ -363,4 +445,3 @@ DBMS_OUTPUT.put_line('Disseminate ' || each_row.organization_id || ' : ' || each
 
 end MANAGER_PK;
 /
-

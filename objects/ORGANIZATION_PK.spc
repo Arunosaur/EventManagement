@@ -1,4 +1,4 @@
-create package         ORGANIZATION_PK
+CREATE OR REPLACE PACKAGE EM_CODE.ORGANIZATION_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : ORGANIZATION_PK
@@ -54,4 +54,3 @@ is
 
 end ORGANIZATION_PK;
 /
-

@@ -1,4 +1,4 @@
-create package body         PARAMETER_DEFAULTS_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.PARAMETER_DEFAULTS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : PARAMETER_DEFAULTS_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'PARAMETER_DEFAULTS_PK.get';
-   
+
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -221,4 +221,3 @@ is
 
 end PARAMETER_DEFAULTS_PK;
 /
-

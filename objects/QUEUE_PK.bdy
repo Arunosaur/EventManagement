@@ -1,4 +1,4 @@
-create package body         QUEUE_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.QUEUE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : QUEUE_PK
@@ -1333,7 +1333,7 @@ is
       i_group_id        em.event_queues.group_id%type,
       i_organization_id em.event_queues.organization_id%type,
       i_run_after_tm    em.event_queues.run_after_tm%type default null,
-      i_user_id         em.event_queues.user_id%type
+      i_user_id         em.event_queues.create_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -1386,9 +1386,9 @@ is
                               );
 
          insert into em.event_queues
-            (id, previous_id, group_id, event_definition_id, organization_id, value, status_id, run_after_tm, user_id)
+            (id, previous_id, group_id, event_definition_id, organization_id, value, status_id, run_after_tm, create_user_id, last_update_user_id)
          values
-            (l_id, l_previous_queue_id, i_group_id, each_ge.event_definition_id, i_organization_id, l_value, 1, decode(each_ge.min_sequence, each_ge.sequence, i_run_after_tm, null), i_user_id)
+            (l_id, l_previous_queue_id, i_group_id, each_ge.event_definition_id, i_organization_id, l_value, 1, decode(each_ge.min_sequence, each_ge.sequence, i_run_after_tm, null), i_user_id, i_user_id)
          returning id into l_previous_queue_id;
 
       end loop;
@@ -1407,7 +1407,7 @@ is
       i_group_id        em.event_queues.group_id%type,
       i_organization_id em.event_queues.organization_id%type,
       i_start_tm        em.event_queues.run_after_tm%type,
-      i_user_id         em.event_queues.user_id%type
+      i_user_id         em.event_queues.create_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -1438,16 +1438,18 @@ is
       l_id                em.event_queues.id%type;
       l_previous_queue_id em.event_queues.previous_id%type;
       l_value             clob;
-      l_run_after_tm      date;
+
+      l_run_after_tm date;
    begin
       for each_ge in csr_group_events
       loop
          if csr_group_events%rowcount = 1
          then
-            null;
-            /* figure out time based on the cycle and given last_completed_tm */
-            --l_run_after_tm
+            l_run_after_tm := CYCLE_EVALUATOR_PK.sub_cycle(each_ge.cycle_id, i_start_tm);
          end if;
+
+         l_id := em.event_queues_id.nextval;
+
          l_value := build_call(i_group_id            => i_group_id,
                                i_event_definition_id => each_ge.event_definition_id,
                                i_application_id      => each_ge.application_id,
@@ -1456,9 +1458,9 @@ is
                               );
 
          insert into em.event_queues
-            (previous_id, group_id, event_definition_id, organization_id, value, status_id, run_after_tm, user_id)
+            (id, previous_id, group_id, event_definition_id, organization_id, value, status_id, run_after_tm, create_user_id, last_update_user_id)
          values
-            (l_previous_queue_id, i_group_id, each_ge.event_definition_id, i_organization_id, l_value, 1, decode(each_ge.min_sequence, each_ge.sequence, l_run_after_tm, null), i_user_id)
+            (l_id, l_previous_queue_id, i_group_id, each_ge.event_definition_id, i_organization_id, l_value, 1, decode(each_ge.min_sequence, each_ge.sequence, l_run_after_tm, null), i_user_id, i_user_id)
          returning id into l_previous_queue_id;
       end loop;
 
@@ -1474,7 +1476,7 @@ is
    (
       i_id        em.event_queues.id%type,
       i_to_status em.event_queue_status.description%type,
-      i_user_id   em.event_queues.user_id%type
+      i_user_id   em.event_queues.last_update_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -1501,9 +1503,9 @@ is
       where  lower(trim(description)) = lower(trim(i_to_status));
 
       update em.event_queues
-      set    status_id        = l_status_id,
-             user_id          = i_user_id,
-             last_change_date = current_date
+      set    status_id           = l_status_id,
+             last_update_user_id = i_user_id,
+             last_change_date    = current_date
       where  id        =  i_id
       and    status_id != l_status_id;
 
@@ -1517,10 +1519,10 @@ is
 
    procedure remove_block_string
    (
-      i_id            em.event_queues.id%type,
-      i_before_string varchar2,
-      i_clob          clob,
-      i_user_id       em.event_queues.user_id%type
+      i_before_string   varchar2,
+      i_application_id  em.applications.id%type default null,
+      i_organization_id em.organizations.id%type default null,
+      i_user_id         em.event_queues.last_update_user_id%type
    )
    /*
    ||----------------------------------------------------------------------------
@@ -1539,37 +1541,31 @@ is
       l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.remove_block_string';
 
       l_tt_parms logs.tar_parm;
-
-      l_start_pos  integer;
-      l_return_pos integer;
-      l_end_pos    integer;
-      l_clob       clob;
    begin
       timer.startme(l_c_module || env.get_session_id);
 
-      logs.add_parm(l_tt_parms, 'i_id', i_id);
       logs.add_parm(l_tt_parms, 'i_before_string', i_before_string);
-      logs.add_parm(l_tt_parms, 'i_clob', i_clob);
       logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
 
       logs.info('ENTRY', l_tt_parms);
 
-      l_start_pos := instr(i_clob, i_before_string) + length(i_before_string);
-      l_return_pos := instr(i_clob, 'RETURN;');
-      l_end_pos   := instr(i_clob, 'EM_CODE.EVENT_LOG_PK.init(i_queue_id => i_queue_id);');
-
-      if (    (instr(i_clob, i_before_string) > 0 and l_end_pos > 0)
-          and l_return_pos between l_start_pos and l_end_pos
-         )
-      then
-          l_clob := substr(i_clob, 1, l_start_pos - 1) || substr(i_clob, l_end_pos);
-          l_clob := regexp_replace(l_clob, i_before_string, '');
-      end if;
-
-      update em.event_queues q
-      set    q.value   = l_clob,
-             q.user_id = i_user_id
-      where  q.id = i_id;
+      update em.event_queues t
+      set    t.value               = regexp_replace(t.value, i_before_string || chr(10) || '\s*RETURN;', i_before_string || ' RETURN;'),
+             t.last_update_user_id = i_user_id,
+             t.last_change_date    = current_date
+      where  t.status_id = 1
+      and    dbms_lob.instr(t.value, 'RETURN;') > 1
+      and    dbms_lob.instr(t.value, i_before_string) > 1
+      and    (   i_application_id is null
+              or exists (select 1
+                         from   em.groups g
+                         where  g.id             = t.group_id
+                         and    g.application_id = i_application_id
+                        )
+             )
+      and    (   i_organization_id is null
+              or t.organization_id = i_organization_id
+             );
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -1599,15 +1595,6 @@ is
 
       l_tt_parms logs.tar_parm;
 
-      cursor csr_gb(ip_before_string varchar2)
-      is
-      select t.id, t.value
-      from   em.event_queues t
-      where  t.status_id = 1
-      and    dbms_lob.instr(t.value, 'RETURN;') > 1
-      and    dbms_lob.instr(t.value, ip_before_string) > 1
-      order by t.last_change_date;
-
       l_c_before_string constant varchar2(15) := '--global_block';
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -1616,14 +1603,7 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      for each_queue in csr_gb(l_c_before_string)
-      loop
-         remove_block_string(i_id            => each_queue.id,
-                             i_before_string => l_c_before_string,
-                             i_clob          => each_queue.value,
-                             i_user_id       => i_user_id
-                            );
-      end loop;
+      remove_block_string(i_before_string => l_c_before_string, i_user_id => i_user_id);
 
       HELPER_SQL_PK.remove_global_block(i_user_id => i_user_id);
 
@@ -1659,18 +1639,6 @@ is
 
       l_tt_parms logs.tar_parm;
 
-      cursor csr_gb(ip_before_string varchar2)
-      is
-      select t.id, t.value
-      from   em.event_queues t
-      join   em.groups       g
-      on     g.id = t.group_id
-      where  t.status_id = 1
-      and    g.application_id = i_application_id
-      and    dbms_lob.instr(t.value, 'RETURN;') > 1
-      and    dbms_lob.instr(t.value, ip_before_string) > 1
-      order by t.last_change_date;
-
       l_c_before_string constant varchar2(15) := '--application_block';
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -1680,14 +1648,7 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      for each_queue in csr_gb(l_c_before_string)
-      loop
-         remove_block_string(i_id            => each_queue.id,
-                             i_before_string => l_c_before_string,
-                             i_clob          => each_queue.value,
-                             i_user_id       => i_user_id
-                            );
-      end loop;
+      remove_block_string(i_before_string => l_c_before_string, i_application_id => i_application_id, i_user_id => i_user_id);
 
       HELPER_SQL_PK.remove_application_block(i_application_id => i_application_id, i_user_id => i_user_id);
 
@@ -1723,15 +1684,6 @@ is
 
       l_tt_parms logs.tar_parm;
 
-      cursor csr_gb(ip_before_string varchar2)
-      is
-      select t.id, t.value
-      from   em.event_queues t
-      where  t.status_id = 1
-      and    t.organization_id = i_organization_id
-      and    dbms_lob.instr(t.value, 'RETURN;') > 1
-      and    dbms_lob.instr(t.value, ip_before_string) > 1
-      order by t.last_change_date;
 
       l_c_before_string constant varchar2(15) := '--organization_block';
    begin
@@ -1742,14 +1694,7 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      for each_queue in csr_gb(l_c_before_string)
-      loop
-         remove_block_string(i_id            => each_queue.id,
-                             i_before_string => l_c_before_string,
-                             i_clob          => each_queue.value,
-                             i_user_id       => i_user_id
-                            );
-      end loop;
+      remove_block_string(i_before_string => l_c_before_string, i_organization_id => i_organization_id, i_user_id => i_user_id);
 
       HELPER_SQL_PK.remove_organization_block(i_organization_id => i_organization_id, i_user_id => i_user_id);
 
@@ -1786,19 +1731,6 @@ is
 
       l_tt_parms logs.tar_parm;
 
-      cursor csr_gb(ip_before_string varchar2)
-      is
-      select t.id, t.value
-      from   em.event_queues t
-      join   em.groups       g
-      on     g.id = t.group_id
-      where  t.status_id = 1
-      and    g.application_id  = i_application_id
-      and    t.organization_id = i_organization_id
-      and    dbms_lob.instr(t.value, 'RETURN;') > 1
-      and    dbms_lob.instr(t.value, ip_before_string) > 1
-      order by t.last_change_date;
-
       l_c_before_string constant varchar2(15) := '--app_org_block';
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -1809,14 +1741,7 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      for each_queue in csr_gb(l_c_before_string)
-      loop
-         remove_block_string(i_id            => each_queue.id,
-                             i_before_string => l_c_before_string,
-                             i_clob          => each_queue.value,
-                             i_user_id       => i_user_id
-                            );
-      end loop;
+      remove_block_string(i_before_string => l_c_before_string, i_application_id => i_application_id, i_organization_id => i_organization_id, i_user_id => i_user_id);
 
       HELPER_SQL_PK.remove_app_org_block(i_application_id => i_application_id, i_organization_id => i_organization_id, i_user_id => i_user_id);
 
@@ -1831,4 +1756,3 @@ is
 
 end QUEUE_PK;
 /
-

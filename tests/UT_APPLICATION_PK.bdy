@@ -1,4 +1,4 @@
-create package body         UT_APPLICATION_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.UT_APPLICATION_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : UT_APPLICATION_PK
@@ -120,7 +120,7 @@ create package body         UT_APPLICATION_PK
       EM_CODE.APPLICATION_PK.get(o_applications => l_csr_actual);
 
       -- Assert
-      ut.expect(l_csr_actual).to_equal(l_csr_expect).exclude('ID, LAST_CHANGE_DATE').unordered(); 
+      ut.expect(l_csr_actual).to_equal(l_csr_expect).exclude('ID, LAST_CHANGE_DATE').unordered();
       --ut.expect(l_csr_actual).to_have_count(l_expect_count);
    end get;
 
@@ -194,4 +194,3 @@ begin
    ENV.set_app_cd('EMS');
 end UT_APPLICATION_PK;
 /
-

@@ -1,10 +1,10 @@
-CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
+CREATE OR REPLACE PACKAGE EM_CODE.UT_CYCLE_PK
 /*
 ||---------------------------------------------------------------------------------
-|| NAME                : MANAGER_PK
-|| CREATED BY          : Arun S. Rajagopalan
-|| CREATE DATE         : Jan, 27th 2023
-|| DESCRIPTION         : To manage events
+|| NAME                : UT_CYCLE_PK
+|| CREATED BY          : Kranthi Padala
+|| CREATE DATE         : Feb 1st 2023
+|| DESCRIPTION         : Test suite to maintain cycles
 ||---------------------------------------------------------------------------------
 || CHANGELOG
 ||---------------------------------------------------------------------------------
@@ -14,13 +14,20 @@ CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
 ||---------------------------------------------------------------------------------
 ||
 */
-is
+ is
+ -- %suite(Event Management System)
 
-   procedure disseminate
-   (
-      i_dc_id   integer,
-      i_user_id varchar2
-   );
+-- %test (add a new cycle)
+ procedure add;
 
-end MANAGER_PK;
+ -- %test (Retreivng without a condition)
+ procedure get;
+
+-- %test (Modifying an existing cycle)
+ procedure modify;
+
+-- %test (Removing an existing cycle)
+ procedure remove;
+
+end;
 /

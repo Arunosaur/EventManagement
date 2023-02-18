@@ -1,8 +1,10 @@
 drop table cycles;
 drop table organization_types;
 drop table applications;
-drop table sub_cycle_weeks_in_a_year;
+drop table sub_cycle_weeks_in_an_year;
 drop table sub_cycle_weeks_in_a_month;
+drop table sub_cycle_days_in_a_month;
+drop table sub_cycle_days_in_an_year;
 drop table days_of_the_week;
 drop table sub_cycle_days_of_the_week;
 drop table event_definitions;
@@ -24,7 +26,7 @@ drop table helper_sql_types;
 drop table helper_sql_headers;
 drop table helper_sql_details;
 drop table interval_measures;
-drop table months_in_a_year;
+drop table months_in_an_year;
 drop table sub_cycle_months;
 drop table sub_cycle_add;
 drop table interval_conversions;
@@ -69,9 +71,9 @@ create table cycles
  last_change_date  date default current_date not null
 );
 
-create table months_in_a_year
-(id   number(2) not null constraint pk_months_in_a_year primary key,
- code varchar2(3) not null constraint uk_months_in_a_year unique,
+create table months_in_an_year
+(id   number(2) not null constraint pk_months_in_an_year primary key,
+ code varchar2(3) not null constraint uk_months_in_an_year unique,
  description varchar2(9) not null,
  user_id varchar2(128) not null,
  last_change_date  date default current_date not null
@@ -84,16 +86,34 @@ create table sub_cycle_months
  last_change_date  date default current_date not null,
  constraint pk_sub_cycle_months primary key (cycle_id, month_id),
  constraint fk_sub_cycle_months_cycles foreign key (cycle_id) references cycles(id),
- constraint fk_sub_cycle_months_months_in_a_year foreign key (month_id) references months_in_a_year(id)
+ constraint fk_sub_cycle_months_months_in_an_year foreign key (month_id) references months_in_an_year(id)
 );
 
-create table sub_cycle_weeks_in_a_year
+create table sub_cycle_days_in_a_month
 (cycle_id number(5) not null,
- week_id  number(2) not null constraint ck_sub_cycle_weeks_in_a_year check (week_id between 1 and 52),
+ day_id  number(2) not null constraint ck_sub_cycle_days_in_a_month check (day_id between 1 and 31),
  user_id varchar2(128) not null,
  last_change_date  date default current_date not null,
- constraint pk_sub_cycle_weeks_in_a_year primary key (cycle_id, week_id),
- constraint fk_sub_cycle_weeks_in_a_year_cycles foreign key (cycle_id) references cycles(id)
+ constraint pk_sub_cycle_days_in_a_month primary key (cycle_id, day_id),
+ constraint fk_sub_cycle_days_in_a_month_cycles foreign key (cycle_id) references cycles(id)
+);
+
+create table sub_cycle_days_in_an_year
+(cycle_id number(5) not null,
+ day_id  number(3) not null constraint ck_sub_cycle_days_in_an_year check (day_id between 1 and 366),
+ user_id varchar2(128) not null,
+ last_change_date  date default current_date not null,
+ constraint pk_sub_cycle_days_in_an_year primary key (cycle_id, day_id),
+ constraint fk_sub_cycle_days_in_an_year_cycles foreign key (cycle_id) references cycles(id)
+);
+
+create table sub_cycle_weeks_in_an_year
+(cycle_id number(5) not null,
+ week_id  number(2) not null constraint ck_sub_cycle_weeks_in_an_year check (week_id between 1 and 52),
+ user_id varchar2(128) not null,
+ last_change_date  date default current_date not null,
+ constraint pk_sub_cycle_weeks_in_an_year primary key (cycle_id, week_id),
+ constraint fk_sub_cycle_weeks_in_an_year_cycles foreign key (cycle_id) references cycles(id)
 );
 
 create table sub_cycle_weeks_in_a_month
@@ -281,7 +301,9 @@ create table event_queues
  value  CLOB  null,
  status_id   NUMBER(3) not null,
  run_after_tm   date null,
- user_id varchar2(128) not null,
+ create_user_id varchar2(128) not null,
+ create_date       date default current_date not null,
+ last_update_user_id varchar2(128) not null,
  last_change_date  date default current_date not null,
  constraint fk_event_queues_event_queues foreign key (previous_id) references event_queues(id),
  constraint fk_event_queues_group_events foreign key (group_id, event_definition_id) references group_events (group_id, event_definition_id),

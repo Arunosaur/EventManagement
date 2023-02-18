@@ -1,4 +1,4 @@
-create package         GROUP_PK
+CREATE OR REPLACE PACKAGE EM_CODE.GROUP_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : GROUP_PK
@@ -57,4 +57,3 @@ is
 
 end GROUP_PK;
 /
-

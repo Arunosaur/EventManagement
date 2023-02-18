@@ -1,4 +1,4 @@
-create package         PARAMETER_DEFAULTS_PK
+CREATE OR REPLACE PACKAGE EM_CODE.PARAMETER_DEFAULTS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : PARAMETER_DEFAULTS_PK
@@ -49,4 +49,3 @@ is
 
 end PARAMETER_DEFAULTS_PK;
 /
-

@@ -1,10 +1,10 @@
-CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
+CREATE OR REPLACE PACKAGE EM_CODE.TYPE_PK
 /*
 ||---------------------------------------------------------------------------------
-|| NAME                : MANAGER_PK
+|| NAME                : TYPE_PK
 || CREATED BY          : Arun S. Rajagopalan
-|| CREATE DATE         : Jan, 27th 2023
-|| DESCRIPTION         : To manage events
+|| CREATE DATE         : Feb, 17th 2023
+|| DESCRIPTION         : For types used across packages
 ||---------------------------------------------------------------------------------
 || CHANGELOG
 ||---------------------------------------------------------------------------------
@@ -16,11 +16,11 @@ CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
 */
 is
 
-   procedure disseminate
-   (
-      i_dc_id   integer,
-      i_user_id varchar2
+   type rt_date is record
+   (id               integer,
+    description      varchar2(15),
+    approximate_date date
    );
 
-end MANAGER_PK;
+end TYPE_PK;
 /

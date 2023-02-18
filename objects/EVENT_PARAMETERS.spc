@@ -1,4 +1,4 @@
-create package         EVENT_PARAMETERS
+CREATE OR REPLACE PACKAGE EM_CODE.EVENT_PARAMETERS
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : EVENT_PARAMETERS
@@ -57,4 +57,3 @@ is
 
 end EVENT_PARAMETERS;
 /
-
