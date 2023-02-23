@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.MANAGER_PK
+create package body         MANAGER_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : MANAGER_PK
@@ -237,14 +237,20 @@ is
             from   em.event_queues q
             where  q.id = i_queue_id
             and    exists (select 1
-                           from   em.event_queues e
-                           where  e.event_definition_id = q.event_definition_id
+                           from   em.event_queues       e
+                           join   em.event_queue_status s
+                           on     s.id = e.status_id
+                           where  s.description in ('Locked', 'Released', 'Failed')
+                           and    e.event_definition_id = q.event_definition_id
                            and    e.organization_id = q.organization_id
                            and    e.id != q.id
                           )
             and    exists (select 1
-                           from   em.event_queues g
-                           where  g.group_id = q.group_id
+                           from   em.event_queues       g
+                           join   em.event_queue_status s
+                           on     s.id = g.status_id
+                           where  s.description in ('Locked', 'Released', 'Failed')
+                           and    g.group_id = q.group_id
                            and    g.organization_id = q.organization_id
                            and    g.id != q.id
                           )
@@ -445,3 +451,4 @@ is
 
 end MANAGER_PK;
 /
+
