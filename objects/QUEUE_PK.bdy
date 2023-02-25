@@ -1522,6 +1522,10 @@ is
       commit;
 
    exception
+      when TYPE_PK.e_row_locked then
+         rollback;
+         raise;
+
       when others then
          rollback;
 
@@ -1763,6 +1767,114 @@ is
          logs.err(l_tt_parms);
 
    end reset_and_remove_app_org_block;
+
+   function get_count
+   return varchar2
+   /*
+   ||----------------------------------------------------------------------------
+   || get_count
+   ||   get the event queue count by application
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/24 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.get_count';
+
+      l_tt_parms logs.tar_parm;
+
+      l_events varchar2(32767);
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select listagg(cnt) within group (order by cnt)
+      into   l_events
+      from   (select  'UPDATE ' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code || ' ' || count(q.group_id) || chr(10) cnt
+              from   em.organizations      o
+              join   em.event_queues       q
+              on     q.organization_id = o.id
+              join   em.event_queue_status s
+              on     s.id = q.status_id
+              join   em.groups             g
+              on     g.id = q.group_id
+              join   em.applications       a
+              on     a.id = g.application_id
+              where  s.description = 'New'
+              and    (   q.run_after_tm is null
+                      or q.run_after_tm <= sysdate
+                     )
+              and    q.previous_id is null
+              group by 'UPDATE ' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code
+             );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_events;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end get_count;
+
+   procedure get
+   (
+      i_application_id  em.applications.id%type default null,
+      i_organization_id em.organizations.id%type default null,
+      o_queues          out sys_refcursor
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || get
+   ||   Get the event queues
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/02/24 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+
+   begin
+
+      open o_queues
+      for
+      select q.id, a.description application, g.description group_description, d.description event, q.organization_id, o.name organization, q.status_id, s.description status, q.run_after_tm
+      from   em.event_queues       q
+      join   em.event_queue_status s
+      on     s.id = q.status_id
+      join   em.organizations      o
+      on     o.id = q.organization_id
+      join   em.groups             g
+      on     g.id = q.group_id
+      join   em.event_definitions  d
+      on     d.id = q.event_definition_id
+      join   em.applications       a
+      on     a.id = g.application_id
+      where  o.id = nvl(i_organization_id, o.id)
+      and    a.id = nvl(i_application_id, a.id)
+      and    not exists (select 1
+                         from   em.event_logs l
+                         where  l.queue_id = q.id
+                        )
+      order by a.id, o.id, q.run_after_tm nulls first;
+
+   exception
+      when others then
+         null;
+
+   end get;
 
 end QUEUE_PK;
 /

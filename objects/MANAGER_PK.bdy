@@ -142,30 +142,6 @@ is
 
    end unlock_group;
 
-   procedure notify_job_manager(i_dc_id integer)
-   /*
-   ||----------------------------------------------------------------------------
-   || notify_job_manager
-   ||   Notify the job manager to run more concurrent jobs
-   ||----------------------------------------------------------------------------
-   ||             C H A N G E     L O G
-   ||----------------------------------------------------------------------------
-   || Date       | USERID  | Changes
-   ||----------------------------------------------------------------------------
-   || 2023/02/03 | asrajag | Original
-   ||----------------------------------------------------------------------------
-   */
-   is
-
-   begin
-      null;
-
-   exception
-      when others then
-         raise;
-
-   end notify_job_manager;
-
    function is_event_restricted
    (
       i_organization_id     em.event_queues.organization_id%type,
@@ -198,11 +174,6 @@ is
              on     s.id = q.status_id
              where  s.description in ('Locked', 'Released', 'Failed')
              and    q.organization_id = i_organization_id
-             and    q.group_id != i_group_id
-            ),
-        count_wip_queues as
-            (select count(1) cnt
-             from   in_process_queues
             ),
         count_group_restrictions as
            (select count(1) cnt
@@ -255,11 +226,9 @@ is
                            and    g.id != q.id
                           )
            )
-        select (q.cnt + r.cnt + s.cnt + t.cnt + u.cnt + v.cnt)
+        select (r.cnt + s.cnt + t.cnt + u.cnt + v.cnt)
         into   l_count
-        from   count_wip_queues               q
-        join   count_group_restrictions       r
-        on     1 = 1
+        from   count_group_restrictions       r
         join   count_group_event_restrictions s
         on     1 = 1
         join   count_event_group_restrictions t
@@ -403,43 +372,71 @@ is
 
       cursor csr_group_events
       is
-      select o.id organization_id,
-             first_value(q.id) over(order by q.create_date) queue_id,
-             first_value(q.group_id) over(order by q.create_date) group_id,
-             first_value(q.run_after_tm) over(order by q.create_date) run_after_tm,
-             count(distinct group_id) over() distinct_groups
-      from   em.organizations      o
-      join   em.event_queues       q
-      on     q.organization_id = o.id
-      join   em.event_queue_status s
-      on     s.id = q.status_id
-      where  o.code = to_char(i_dc_id)
-      and    s.description = 'New'
-      and    (   q.run_after_tm is null
-              or q.run_after_tm <= sysdate
-             )
-      and    q.previous_id is null
-      fetch first 1 row only;
+      with
+         failed_queues as
+            (select connect_by_root q.id root_id, q.*, level lvl
+             from   em.organizations      o
+             join   em.event_queues       q
+             on     q.organization_id = o.id
+             join   em.event_queue_status s
+             on     s.id = q.status_id
+             where  o.code = to_char(i_dc_id)
+             and    s.description = 'New'
+             start with (   q.run_after_tm is null
+                         or q.run_after_tm <= sysdate
+                        )
+             and        s.description = 'Completed'
+             and        q.previous_id is null
+             connect by prior q.id = q.previous_id
+            ),
+         next_eligible_queue as
+           (select f.organization_id, f.id, f.group_id, f.run_after_tm
+            from   failed_queues f
+            where  lvl = (select min(lvl)
+                          from   failed_queues x
+                          where  x.root_id = f.root_id
+                         )
+            )
+            select q.organization_id, q.id, q.group_id, q.run_after_tm
+            from   em.organizations      o
+            join   em.event_queues       q
+            on     q.organization_id = o.id
+            join   em.event_queue_status s
+            on     s.id = q.status_id
+            where  o.code = to_char(i_dc_id)
+            and    s.description = 'New'
+            and    (   q.run_after_tm is null
+                    or q.run_after_tm <= sysdate
+                   )
+            and    q.previous_id is null
+            union all
+            select *
+            from   next_eligible_queue
+            order by 1, 4 nulls first;
 
+      l_is_continue boolean := false;
    begin
       <<disseminator>>
       for each_row in csr_group_events
       loop
-         lock_group(i_organization_id => each_row.organization_id,
-                    i_group_id        => each_row.group_id,
-                    i_queue_id        => each_row.queue_id,
-                    i_user_id         => i_user_id
-                   );
+         begin
+            lock_group(i_organization_id => each_row.organization_id,
+                       i_group_id        => each_row.group_id,
+                       i_queue_id        => each_row.id,
+                       i_user_id         => i_user_id
+                      );
+         exception
+            when TYPE_PK.e_row_locked then
+               l_is_continue := true;
+               continue;
+         end;
 
-         if each_row.distinct_groups > 1
-         then
-            notify_job_manager(i_dc_id);
-         end if;
-
-         operate(i_queue_id => each_row.queue_id,
+         operate(i_queue_id => each_row.id,
                  i_start_tm => each_row.run_after_tm,
                  i_user_id  => i_user_id
                 );
+
+         exit when not l_is_continue;
 
       end loop disseminator;
 

@@ -60,5 +60,15 @@ is
       i_user_id         varchar2
    );
 
+   function get_count
+   return varchar2;
+
+   procedure get
+   (
+      i_application_id  em.applications.id%type default null,
+      i_organization_id em.organizations.id%type default null,
+      o_queues          out sys_refcursor
+   );
+
 end QUEUE_PK;
 /
