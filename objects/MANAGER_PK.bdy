@@ -1,4 +1,4 @@
-create package body         MANAGER_PK
+CREATE OR REPLACE PACKAGE BODY EM_CODE.MANAGER_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : MANAGER_PK
@@ -451,4 +451,3 @@ is
 
 end MANAGER_PK;
 /
-

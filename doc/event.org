@@ -1,0 +1,18 @@
+* Event Management System
+** To get the list of applications
+#+BEGIN_SRC sql
+  begin
+     env.set_app_cd('EMS');
+     em_code.APPLICATION_PK.get(o_applications => :o_applications);
+  end;
+  /
+#+END_SRC
+
+** To get the list of cycles
+#+BEGIN_SRC sql
+  begin
+     env.set_app_cd('EMS');
+     em_code.CYCLE_PK.get(o_cycles => :o_cycles);
+  end;
+  /
+#+END_SRC

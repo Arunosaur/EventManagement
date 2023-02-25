@@ -1448,20 +1448,23 @@ is
             l_run_after_tm := CYCLE_EVALUATOR_PK.sub_cycle(each_ge.cycle_id, i_start_tm);
          end if;
 
-         l_id := em.event_queues_id.nextval;
+         if l_run_after_tm is not null
+         then
+            l_id := em.event_queues_id.nextval;
 
-         l_value := build_call(i_group_id            => i_group_id,
-                               i_event_definition_id => each_ge.event_definition_id,
-                               i_application_id      => each_ge.application_id,
-                               i_organization_id     => i_organization_id,
-                               i_queue_id            => l_id
-                              );
+            l_value := build_call(i_group_id            => i_group_id,
+                                  i_event_definition_id => each_ge.event_definition_id,
+                                  i_application_id      => each_ge.application_id,
+                                  i_organization_id     => i_organization_id,
+                                  i_queue_id            => l_id
+                                 );
 
-         insert into em.event_queues
-            (id, previous_id, group_id, event_definition_id, organization_id, value, status_id, run_after_tm, create_user_id, last_update_user_id)
-         values
-            (l_id, l_previous_queue_id, i_group_id, each_ge.event_definition_id, i_organization_id, l_value, 1, decode(each_ge.min_sequence, each_ge.sequence, l_run_after_tm, null), i_user_id, i_user_id)
-         returning id into l_previous_queue_id;
+            insert into em.event_queues
+               (id, previous_id, group_id, event_definition_id, organization_id, value, status_id, run_after_tm, create_user_id, last_update_user_id)
+            values
+               (l_id, l_previous_queue_id, i_group_id, each_ge.event_definition_id, i_organization_id, l_value, 1, decode(each_ge.min_sequence, each_ge.sequence, l_run_after_tm, null), i_user_id, i_user_id)
+            returning id into l_previous_queue_id;
+         end if;
       end loop;
 
       commit;
@@ -1495,19 +1498,26 @@ is
       pragma autonomous_transaction;
 
       l_status_id em.event_queue_status.id%type;
-   begin
 
+      l_id em.event_queues.id%type;
+   begin
       select id
       into   l_status_id
       from   em.event_queue_status
       where  lower(trim(description)) = lower(trim(i_to_status));
 
+      select id
+      into   l_id
+      from   em.event_queues
+      where  id        =  i_id
+      and    status_id != l_status_id
+      for update nowait;
+
       update em.event_queues
       set    status_id           = l_status_id,
              last_update_user_id = i_user_id,
              last_change_date    = current_date
-      where  id        =  i_id
-      and    status_id != l_status_id;
+      where  id = i_id;
 
       commit;
 

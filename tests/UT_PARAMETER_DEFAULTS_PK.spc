@@ -17,17 +17,17 @@ CREATE OR REPLACE PACKAGE EM_CODE.UT_PARAMETER_DEFAULTS_PK
  is
  -- %suite(Event Management System)
 
--- %test (add a new cycle)
- --procedure add;
+-- %test (add a new group)
+ procedure add;
 
  -- %test (Retreivng without a condition)
  procedure get;
 
--- %test (Modifying an existing cycle)
- --procedure provide_value;
+-- %test (Modifying an existing group)
+ procedure provide_value;
 
--- %test (Removing an existing cycle)
- --procedure remove;
+-- %test (Removing an existing group)
+ procedure remove;
 
 end;
 /
