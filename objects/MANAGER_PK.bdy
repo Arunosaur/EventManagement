@@ -35,7 +35,7 @@ is
       l_end_pos    number;
       l_is_blocked boolean := false;
    begin
-      l_return_pos := instr(i_clob, 'RETURN;');
+      l_return_pos := regexp_instr(i_clob, 'block' || chr(10) || '\s*RETURN;' );
       l_end_pos := instr(i_clob, 'EM_CODE.EVENT_LOG_PK.init(i_queue_id => i_queue_id);');
       if (    l_return_pos > 0
           and l_return_pos < l_end_pos
@@ -203,28 +203,35 @@ is
             on     g.event_id = e.event_definition_id
             and    g.restricted_event_id = i_event_definition_id
            ),
+        for_self_restrictions as
+           (select q.group_id, q.event_definition_id, q.organization_id, sys_connect_by_path(q.id, '-') pth
+            from   em.event_queues q
+            where  connect_by_isleaf = 1
+            start with q.id = i_queue_id
+            connect by q.previous_id = prior q.id
+           ),
         count_self_restrictions as
            (select count(1) cnt
-            from   em.event_queues q
-            where  q.id = i_queue_id
-            and    exists (select 1
-                           from   em.event_queues       e
-                           join   em.event_queue_status s
-                           on     s.id = e.status_id
-                           where  s.description in ('Locked', 'Released', 'Failed')
-                           and    e.event_definition_id = q.event_definition_id
-                           and    e.organization_id = q.organization_id
-                           and    e.id != q.id
-                          )
-            and    exists (select 1
-                           from   em.event_queues       g
-                           join   em.event_queue_status s
-                           on     s.id = g.status_id
-                           where  s.description in ('Locked', 'Released', 'Failed')
-                           and    g.group_id = q.group_id
-                           and    g.organization_id = q.organization_id
-                           and    g.id != q.id
-                          )
+            from   for_self_restrictions r
+            where  (   exists (select 1
+                               from   em.event_queues       e
+                               join   em.event_queue_status s
+                               on     s.id = e.status_id
+                               where  s.description in ('Locked', 'Released', 'Failed')
+                               and    e.event_definition_id = r.event_definition_id
+                               and    e.organization_id = r.organization_id
+                               and    instr(r.pth, '-' || e.id) = 0
+                              )
+                    or exists (select 1
+                               from   em.event_queues       g
+                               join   em.event_queue_status s
+                               on     s.id = g.status_id
+                               where  s.description in ('Locked', 'Released', 'Failed')
+                               and    g.group_id = r.group_id
+                               and    g.organization_id = r.organization_id
+                               and    instr(r.pth, '-' || g.id) = 0
+                              )
+                   )
            )
         select (r.cnt + s.cnt + t.cnt + u.cnt + v.cnt)
         into   l_count
@@ -297,7 +304,7 @@ is
                                i_queue_id        => each_queue.id,
                                i_user_id         => i_user_id
                               );
-                  exit operator;
+                  raise TYPE_PK.e_event_restricted;
                else
                   <<wip>>
                   loop
@@ -336,6 +343,9 @@ is
             end if;
 
          exception
+            when TYPE_PK.e_event_restricted then
+               raise;
+
             when others then
                QUEUE_PK.change_status(i_id        => each_queue.id,
                                       i_to_status => 'Failed',
@@ -346,6 +356,9 @@ is
       end loop operator;
 
    exception
+      when TYPE_PK.e_event_restricted then
+         raise;
+
       when others then
          raise;
 
@@ -353,7 +366,7 @@ is
 
    procedure disseminate
    (
-      i_dc_id   integer,
+      i_dc_id   em.organizations.code%type,
       i_user_id varchar2
    )
    /*
@@ -380,7 +393,7 @@ is
              on     q.organization_id = o.id
              join   em.event_queue_status s
              on     s.id = q.status_id
-             where  o.code = to_char(i_dc_id)
+             where  o.code = i_dc_id
              and    s.description = 'New'
              start with (   q.run_after_tm is null
                          or q.run_after_tm <= sysdate
@@ -403,7 +416,7 @@ is
             on     q.organization_id = o.id
             join   em.event_queue_status s
             on     s.id = q.status_id
-            where  o.code = to_char(i_dc_id)
+            where  o.code = i_dc_id
             and    s.description = 'New'
             and    (   q.run_after_tm is null
                     or q.run_after_tm <= sysdate
@@ -425,16 +438,21 @@ is
                        i_queue_id        => each_row.id,
                        i_user_id         => i_user_id
                       );
+
+            operate(i_queue_id => each_row.id,
+                    i_start_tm => each_row.run_after_tm,
+                    i_user_id  => i_user_id
+                   );
+
          exception
             when TYPE_PK.e_row_locked then
                l_is_continue := true;
                continue;
-         end;
 
-         operate(i_queue_id => each_row.id,
-                 i_start_tm => each_row.run_after_tm,
-                 i_user_id  => i_user_id
-                );
+            when TYPE_PK.e_event_restricted then
+               l_is_continue := true;
+               continue;
+         end;
 
          exit when not l_is_continue;
 

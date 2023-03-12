@@ -52,6 +52,48 @@ is
 
    end get;
 
+   function get(i_description em.event_definitions.description%type)
+   return em.event_definitions.id%type
+   /*
+   ||----------------------------------------------------------------------------
+   || get
+   ||   Get the event
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/02 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'EVENT_PK.get';
+
+      l_tt_parms logs.tar_parm;
+
+      l_id em.event_definitions.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select t.id
+      into   l_id
+      from   em.event_definitions t
+      where  lower(trim(t.description)) = lower(trim(i_description));
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_id;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end get;
+
    procedure register
    (
       i_description    em.event_definitions.description%type,

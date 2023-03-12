@@ -18,7 +18,7 @@ is
 
    procedure disseminate
    (
-      i_dc_id   integer,
+      i_dc_id   em.organizations.code%type,
       i_user_id varchar2
    );
 

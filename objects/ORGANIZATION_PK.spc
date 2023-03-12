@@ -18,6 +18,9 @@ is
 
    procedure get(o_organizations out sys_refcursor);
 
+   function get(i_code em.organizations.code%type)
+   return em.organizations.id%type;
+
    procedure register
    (
       i_type      em.organizations.type%type,

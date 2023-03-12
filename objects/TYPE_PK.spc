@@ -22,8 +22,10 @@ is
     approximate_date date
    );
 
-   e_row_locked EXCEPTION;
+   e_row_locked exception;
    pragma exception_init(e_row_locked, -54);
+
+   e_event_restricted exception;
 
 end TYPE_PK;
 /

@@ -166,6 +166,74 @@ is
 
    end provide_value;
 
+   procedure provide_value
+   (
+      i_group_description  em.groups.description%type,
+      i_application_code   em.applications.code%type,
+      i_event_description  em.event_definitions.description%type,
+      i_parameter_sequence em.event_group_organization_defaults.parameter_sequence%type,
+      i_organization_code  em.organizations.code%type,
+      i_value              em.event_group_organization_defaults.value%type,
+      i_user_id            em.event_group_organization_defaults.last_update_user_id%type
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || provide_value
+   ||   Provide the value as a default for a parameter in the event in a group.
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/02 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'PARAMETER_DEFAULTS_PK.provide_value';
+
+      l_tt_parms logs.tar_parm;
+
+      l_group_id            em.groups.id%type;
+      l_organization_id     em.organizations.id%type;
+      l_event_definition_id em.event_definitions.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_group_description', i_group_description);
+      logs.add_parm(l_tt_parms, 'i_event_description', i_event_description);
+      logs.add_parm(l_tt_parms, 'i_parameter_sequence', i_parameter_sequence);
+      logs.add_parm(l_tt_parms, 'i_organization_code', i_organization_code);
+      logs.add_parm(l_tt_parms, 'i_value', i_value);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_group_id := GROUP_PK.get(i_description      => i_group_description,
+                                 i_application_code => i_application_code
+                                );
+
+      l_organization_id := ORGANIZATION_PK.get(i_code => i_organization_code);
+
+      l_event_definition_id := EVENT_PK.get(i_description => i_event_description);
+
+      provide_value(i_group_id            => l_group_id,
+                    i_event_definition_id => l_event_definition_id,
+                    i_parameter_sequence  => i_parameter_sequence,
+                    i_organization_id     => l_organization_id,
+                    i_value               => i_value,
+                    i_user_id             => i_user_id
+                   );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end provide_value;
+
    procedure remove
    (
       i_group_id            em.event_group_organization_defaults.group_id%type,

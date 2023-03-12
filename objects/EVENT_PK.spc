@@ -18,6 +18,9 @@ is
 
    procedure get(o_events out sys_refcursor);
 
+   function get(i_description em.event_definitions.description%type)
+   return em.event_definitions.id%type;
+
    procedure register
    (
       i_description    em.event_definitions.description%type,

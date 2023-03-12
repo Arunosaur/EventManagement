@@ -1402,6 +1402,65 @@ is
 
    end push_default;
 
+   procedure push_default
+   (
+      i_group_description em.groups.description%type,
+      i_application_code  em.applications.code%type,
+      i_organization_code em.organizations.code%type,
+      i_run_after_tm      em.event_queues.run_after_tm%type default null,
+      i_user_id           em.event_queues.create_user_id%type
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || push_default
+   ||   push the default to the event queue
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/01 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.push_default';
+
+      l_tt_parms logs.tar_parm;
+
+      l_group_id        em.groups.id%type;
+      l_organization_id em.organizations.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_group_description', i_group_description);
+      logs.add_parm(l_tt_parms, 'i_application_code', i_application_code);
+      logs.add_parm(l_tt_parms, 'i_organization_code', i_organization_code);
+      logs.add_parm(l_tt_parms, 'i_run_after_tm', i_run_after_tm);
+      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      l_group_id := GROUP_PK.get(i_description      => i_group_description,
+                                 i_application_code => i_application_code
+                                );
+
+      l_organization_id := ORGANIZATION_PK.get(i_code => i_organization_code);
+
+      push_default(i_group_id        => l_group_id,
+                   i_organization_id => l_organization_id,
+                   i_run_after_tm    => i_run_after_tm,
+                   i_user_id         => i_user_id
+                  );
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end push_default;
+
    procedure pull_default
    (
       i_group_id        em.event_queues.group_id%type,
@@ -1796,7 +1855,7 @@ is
 
       select listagg(cnt) within group (order by cnt)
       into   l_events
-      from   (select  'UPDATE ' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code || ' ' || count(q.group_id) || chr(10) cnt
+      from   (select lower('UPDATE EM_' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code) || ' ' || count(q.group_id) || chr(10) cnt
               from   em.organizations      o
               join   em.event_queues       q
               on     q.organization_id = o.id
@@ -1811,7 +1870,7 @@ is
                       or q.run_after_tm <= sysdate
                      )
               and    q.previous_id is null
-              group by 'UPDATE ' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code
+              group by 'UPDATE EM_' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code
              );
 
       timer.stopme(l_c_module || env.get_session_id);
@@ -1821,7 +1880,6 @@ is
 
    exception
       when others then
-         logs.err(l_tt_parms, i_reraise => false);
          return null;
 
    end get_count;

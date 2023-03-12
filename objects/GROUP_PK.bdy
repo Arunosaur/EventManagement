@@ -56,6 +56,57 @@ is
 
    end get;
 
+   function get
+   (
+      i_description      em.groups.description%type,
+      i_application_code em.applications.code%type
+   )
+   return em.groups.id%type
+  /*
+   ||----------------------------------------------------------------------------
+   || get
+   ||   Get the events
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/01 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'GROUP_PK.get';
+
+      l_tt_parms logs.tar_parm;
+
+      l_id em.groups.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_description', i_description);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select t.id
+      into   l_id
+      from   em.groups       t
+      join   em.applications a
+      on     a.id = t.application_id
+      where  lower(trim(t.description)) = lower(trim(i_description))
+      and    a.code = i_application_code;
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_id;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end get;
+
    procedure register
    (
       i_description      em.groups.description%type,

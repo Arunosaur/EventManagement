@@ -18,6 +18,13 @@ is
 
    procedure get(o_groups out sys_refcursor);
 
+   function get
+   (
+      i_description      em.groups.description%type,
+      i_application_code em.applications.code%type
+   )
+   return em.groups.id%type;
+
    procedure register
    (
       i_description      em.groups.description%type,

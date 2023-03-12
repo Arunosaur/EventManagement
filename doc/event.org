@@ -16,3 +16,31 @@
   end;
   /
 #+END_SRC
+
+** To register a group (use the application_id and cycle_id from the above queries)
+#+BEGIN_SRC sql
+  begin
+     env.set_app_cd('EMS');
+     em_code.GROUP_PK.register(i_description      => :i_description,
+                               i_application_id   => :i_application_id,
+                               i_cycle_id         => :i_cycle_id,
+                               i_preferred_run_tm => :i_preferred_run_tm,
+                               i_user_id          => :i_user_id,
+                               o_id               => :o_id
+                              );
+  end;
+  /
+#+END_SRC
+
+** To get the list of groups
+#+BEGIN_SRC sql
+  begin
+     env.set_app_cd('EMS');
+     em_code.GROUP_PK.get(o_groups => :o_groups);
+  end;
+  /
+#+END_SRC
+
+** To register an event
+#+BEGIN_SRC sql\
+#+END_SRC

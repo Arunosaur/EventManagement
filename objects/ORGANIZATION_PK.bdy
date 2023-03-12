@@ -57,6 +57,50 @@ is
 
    end get;
 
+   function get(i_code em.organizations.code%type)
+   return em.organizations.id%type
+   /*
+   ||----------------------------------------------------------------------------
+   || get
+   ||   Get the organization
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/01 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'ORGANIZATION_PK.get';
+
+      l_tt_parms logs.tar_parm;
+
+      l_id em.organizations.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_code', i_code);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select o.id
+      into   l_id
+      from   em.organizations o
+      where  lower(trim(o.code)) = lower(trim(i_code));
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_id;
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end get;
+
    procedure register
    (
       i_type      em.organizations.type%type,

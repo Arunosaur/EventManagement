@@ -18,9 +18,9 @@ is
 
    function sub_cycle_add
    (
-      l_date     date,
-      l_interval varchar2,
-      l_term     varchar2
+      i_date     date,
+      i_interval varchar2,
+      i_term     varchar2
    )
    return date
    /*
@@ -39,10 +39,15 @@ is
       l_next_cycle date;
    begin
 
-      execute immediate
-         'select :1 + interval '''|| l_interval || '''' || l_term || chr(10) ||
-         'from   dual'
-         into    l_next_cycle using l_date;
+      execute immediate 'select case' || chr(10) ||
+                        '          when :1 + interval '''|| i_interval || ''' ' || i_term || ' > sysdate + interval ''' || i_interval  || ''' ' || i_term || chr(10) ||
+                        '          then' || chr(10) ||
+                        '             :1 + interval '''|| i_interval || ''' ' || i_term || chr(10) ||
+                        '          else' || chr(10) ||
+                        '             trunc(sysdate, ''MI'') + interval ''' || i_interval || ''' ' || i_term || chr(10) ||
+                        '       end' || chr(10) ||
+                        'from   dual'
+      into    l_next_cycle using i_date, i_date;
 
       return l_next_cycle;
 
