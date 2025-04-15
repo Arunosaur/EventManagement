@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.PARAMETER_DEFAULTS_PK
+create or replace package body em_code.PARAMETER_DEFAULTS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : PARAMETER_DEFAULTS_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'PARAMETER_DEFAULTS_PK.get';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -233,6 +233,70 @@ is
          logs.err(l_tt_parms);
 
    end provide_value;
+
+   procedure supplement
+   (
+      i_group_description  em.groups.description%type,
+      i_application_code   em.applications.code%type,
+      i_event_description  em.event_definitions.description%type,
+      i_parameter_sequence em.event_group_organization_defaults.parameter_sequence%type,
+      i_organization_code  em.organizations.code%type,
+      i_value              em.event_group_organization_defaults.value%type,
+      i_user_id            em.event_group_organization_defaults.last_update_user_id%type
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || supplement
+   ||   Provide the value as a default for a parameter in the event in a group.
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/04/03 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      pragma autonomous_transaction;
+
+      l_group_id            em.groups.id%type;
+      l_organization_id     em.organizations.id%type;
+      l_event_definition_id em.event_definitions.id%type;
+   begin
+      select g.id
+      into   l_group_id
+      from   em.applications a
+      join   em.groups       g
+      on     g.application_id = a.id
+      where  a.code = i_application_code
+      and    lower(trim(g.description)) = lower(trim(i_group_description));
+
+      select d.id
+      into   l_event_definition_id
+      from   em.event_definitions d
+      where  lower(trim(d.description)) = lower(trim(i_event_description));
+
+      select o.id
+      into   l_organization_id
+      from   em.organizations o
+      where  o.code = i_organization_code;
+
+      provide_value(i_group_id            => l_group_id,
+                    i_event_definition_id => l_event_definition_id,
+                    i_parameter_sequence  => i_parameter_sequence,
+                    i_organization_id     => l_organization_id,
+                    i_value               => i_value,
+                    i_user_id             => i_user_id
+                   );
+
+      commit;
+
+   exception
+      when others then
+         rollback;
+
+   end supplement;
 
    procedure remove
    (

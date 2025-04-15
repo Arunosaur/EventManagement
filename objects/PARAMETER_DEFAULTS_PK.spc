@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.PARAMETER_DEFAULTS_PK
+create or replace package em_code.PARAMETER_DEFAULTS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : PARAMETER_DEFAULTS_PK
@@ -39,6 +39,17 @@ is
    );
 
    procedure provide_value
+   (
+      i_group_description  em.groups.description%type,
+      i_application_code   em.applications.code%type,
+      i_event_description  em.event_definitions.description%type,
+      i_parameter_sequence em.event_group_organization_defaults.parameter_sequence%type,
+      i_organization_code  em.organizations.code%type,
+      i_value              em.event_group_organization_defaults.value%type,
+      i_user_id            em.event_group_organization_defaults.last_update_user_id%type
+   );
+
+   procedure supplement
    (
       i_group_description  em.groups.description%type,
       i_application_code   em.applications.code%type,

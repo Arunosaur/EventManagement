@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.TYPE_PK
+create or replace package em_code.TYPE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : TYPE_PK

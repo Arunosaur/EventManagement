@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.MANAGER_PK
+create or replace package em_code.MANAGER_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : MANAGER_PK

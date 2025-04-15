@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.GROUP_PK
+create or replace package body em_code.GROUP_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : GROUP_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'GROUP_PK.get';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -39,7 +39,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_groups for
-         select t.id, t.description, a.description application, c.description cycle, t.preferred_run_tm, t.user_id, t.last_change_date
+         select t.id, t.description, t.application_id, a.description application, t.cycle_id, c.description cycle, t.preferred_run_tm, t.user_id, t.last_change_date
          from   em.groups       t
          join   em.applications a
          on     a.id = t.application_id
@@ -76,7 +76,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'GROUP_PK.get';
-
+   
       l_tt_parms logs.tar_parm;
 
       l_id em.groups.id%type;
@@ -106,7 +106,7 @@ is
          return null;
 
    end get;
-
+   
    procedure register
    (
       i_description      em.groups.description%type,

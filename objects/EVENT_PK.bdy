@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.EVENT_PK
+create or replace package body em_code.EVENT_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : EVENT_PK

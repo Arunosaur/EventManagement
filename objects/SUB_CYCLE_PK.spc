@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.SUB_CYCLE_PK
+create or replace package em_code.SUB_CYCLE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : SUB_CYCLE_PK

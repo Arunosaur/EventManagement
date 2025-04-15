@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.CYCLE_EVALUATOR_PK
+create or replace package body em_code.CYCLE_EVALUATOR_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : CYCLE_EVALUATOR_PK
@@ -38,7 +38,7 @@ is
    as
       l_next_cycle date;
    begin
-
+/*
       execute immediate 'select case' || chr(10) ||
                         '          when :1 + interval '''|| i_interval || ''' ' || i_term || ' > sysdate + interval ''' || i_interval  || ''' ' || i_term || chr(10) ||
                         '          then' || chr(10) ||
@@ -48,6 +48,11 @@ is
                         '       end' || chr(10) ||
                         'from   dual'
       into    l_next_cycle using i_date, i_date;
+*/
+      execute immediate 'select ' || chr(10) ||
+                        '         :1 + interval '''|| i_interval || ''' ' || i_term || chr(10) ||
+                        'from   dual'
+      into    l_next_cycle using i_date;
 
       return l_next_cycle;
 
@@ -255,7 +260,7 @@ is
                                         else
                                            next_day(l_my_next_date.approximate_date + ((l_wm_next_date.id - 1) * 7), l_dw_next_date.description)
                                      end;
-                  else
+                  else 
                      l_next_cycle := case
                                         when to_char(l_wm_next_date.approximate_date, 'D') = l_dw_next_date.id
                                         then

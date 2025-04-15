@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.CYCLE_EVALUATOR_PK
+create or replace package em_code.CYCLE_EVALUATOR_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : CYCLE_EVALUATOR_PK

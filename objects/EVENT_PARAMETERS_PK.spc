@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.EVENT_PARAMETERS_PK
+create or replace package em_code.EVENT_PARAMETERS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : EVENT_PARAMETERS

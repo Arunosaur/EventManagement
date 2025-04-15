@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.HELPER_SQL_PK
+create or replace package em_code.HELPER_SQL_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : HELPER_SQL_PK
@@ -63,9 +63,14 @@ is
       i_user_id   varchar2
    );
 
+   function is_globally_blocked
+   return boolean;
+
    procedure future_global_block(i_user_id em.helper_sql_details.user_id%type);
 
    procedure remove_global_block(i_user_id em.helper_sql_details.user_id%type);
+
+   procedure get_blocks(o_blocks out sys_refcursor);
 
    procedure future_application_block
    (

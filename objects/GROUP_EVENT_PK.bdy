@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.GROUP_EVENT_PK
+create or replace package body em_code.GROUP_EVENT_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : GROUP_EVENT_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'GROUP_EVENT_PK.get';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);

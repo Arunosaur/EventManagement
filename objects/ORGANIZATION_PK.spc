@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.ORGANIZATION_PK
+create or replace package em_code.ORGANIZATION_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : ORGANIZATION_PK

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.SUB_CYCLE_PK
+create or replace package body em_code.SUB_CYCLE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : SUB_CYCLE_PK
@@ -517,7 +517,7 @@ is
    begin
       with
          input_date as
-            (select to_char(i_date, 'W') week_id, trunc(i_date, 'MM') dt
+            (select to_char(i_date, 'W') week_id, trunc(i_date, 'MM') dt 
              from   dual
             ),
          year_begin as

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.HELPER_SQL_PK
+create or replace package body em_code.HELPER_SQL_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : HELPER_SQL_PK
@@ -16,6 +16,98 @@ CREATE OR REPLACE PACKAGE BODY EM_CODE.HELPER_SQL_PK
 */
 is
 
+   function get_type(i_description em.helper_sql_types.description%type)
+   return em.helper_sql_types.id%type
+   /*
+   ||----------------------------------------------------------------------------
+   || get_type
+   ||   Get the helper sql type id
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/29 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.get_type';
+
+      l_tt_parms logs.tar_parm;
+
+      l_id em.helper_sql_types.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_description', i_description);
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select t.id
+      into   l_id
+      from   em.helper_sql_types t
+      where  t.description = i_description;
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_id;
+
+   exception
+      when no_data_found then
+         return null;
+
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end get_type;
+
+   function get_execution_point(i_description em.helper_sql_execution_points.description%type)
+   return em.helper_sql_execution_points.id%type
+   /*
+   ||----------------------------------------------------------------------------
+   || get_execution_point
+   ||   Get the helper sql execution point id
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/29 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.get_execution_point';
+
+      l_tt_parms logs.tar_parm;
+
+      l_id em.helper_sql_execution_points.id%type;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.add_parm(l_tt_parms, 'i_description', i_description);
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select t.id
+      into   l_id
+      from   em.helper_sql_execution_points t
+      where  t.description = i_description;
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+      return l_id;
+
+   exception
+      when no_data_found then
+         return null;
+
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return null;
+
+   end get_execution_point;
+
    procedure get_header(o_headers out sys_refcursor)
    /*
    ||----------------------------------------------------------------------------
@@ -31,7 +123,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.get_header';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -39,7 +131,9 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_headers for
-         select h.id, type, t.description type_description, execution_point_id, p.description execution, reference_id, decode(t.description, 'GROUP', g.description, 'GENERICS', c.description) group_or_cycle, sub_reference_id, e.description event, h.user_id, h.last_change_date
+         select h.id, type, t.description type_description, execution_point_id, p.description execution, reference_id,
+                decode(t.description, 'GROUP', 'G:' || g.description, 'GENERICS', 'C:' || c.description, decode(f.description, null, null, e.description, null, 'E:' || f.description)) group_or_cycle_or_event,
+                sub_reference_id, e.description event, h.user_id, h.last_change_date
          from   em.helper_sql_headers          h
          join   em.helper_sql_types            t
          on     t.id = h.type
@@ -51,12 +145,16 @@ is
          and    g.id = to_char(h.reference_id)
          left outer join
                 em.event_definitions           e
-         on    t.description = 'EVENT'
+         on    t.description = 'EVENT' 
          and   e.id = to_char(h.sub_reference_id)
          left outer join
                em.cycles                      c
          on    t.description = 'GENERICS'
          and   c.id = to_char(h.reference_id)
+         left outer join
+               em.event_definitions           f
+         on    t.description = 'EVENT'
+         and   f.id = to_char(h.reference_id)
          order by h.last_change_date;
 
       timer.stopme(l_c_module || env.get_session_id);
@@ -156,7 +254,7 @@ is
       delete em.helper_sql_headers
       where  id = i_id;
 
-      logs.info('This cycle was removed', l_tt_parms);
+      logs.info('This helper header was removed', l_tt_parms);
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -189,7 +287,7 @@ is
    return em.helper_sql_headers.id%type
    is
       l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.get_header_id';
-
+   
       l_tt_parms logs.tar_parm;
 
       l_id em.helper_sql_headers.id%type;
@@ -248,7 +346,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.get_detail';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -405,7 +503,7 @@ is
       where  header_id = i_header_id
       and    id = i_id;
 
-      logs.info('This cycle was removed', l_tt_parms);
+      logs.info('This helper detail was removed', l_tt_parms);
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
@@ -415,6 +513,57 @@ is
          logs.err(l_tt_parms);
 
    end remove_detail;
+
+   function is_globally_blocked
+   return boolean
+   /*
+   ||----------------------------------------------------------------------------
+   || is_globally_blocked
+   ||   check for presence of global blocks
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/04/01 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.is_globally_blocked';
+
+      l_tt_parms logs.tar_parm;
+
+      l_count integer;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      select count(1)
+      into   l_count
+      from   em.helper_sql_headers          h
+      join   em.helper_sql_types            t
+      on     t.id = h.type
+      join   em.helper_sql_execution_points e
+      on     e.id = h.execution_point_id
+      join   em.helper_sql_details          d
+      on     d.header_id = h.id
+      where  t.description  = 'GLOBAL'
+      and    e.description  = 'BLOCK'
+      and    h.reference_id = -1000;
+
+      return (l_count > 0);
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms, i_reraise => false);
+         return true;
+
+   end is_globally_blocked;
 
    procedure future_global_block(i_user_id em.helper_sql_details.user_id%type)
    /*
@@ -514,6 +663,65 @@ is
 
    end remove_global_block;
 
+   procedure get_blocks(o_blocks out sys_refcursor)
+   /*
+   ||----------------------------------------------------------------------------
+   || get_blocks
+   ||   Look for any blocks...
+   ||
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/04/01 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      l_c_module constant typ.t_maxfqnm := 'HELPER_SQL_PK.get_blocks';
+
+      l_tt_parms logs.tar_parm;
+   begin
+      timer.startme(l_c_module || env.get_session_id);
+
+      logs.dbg('ENTRY', l_tt_parms);
+
+      open o_blocks for
+      select a.id application_id, a.code application_code, a.name application_name, a.description application,
+             o.id organization_id, o.code organization_code, o.short_nm organization_short_nm, o.name organization,
+             t.description block_type, d.user_id, d.last_change_date
+      from   em.helper_sql_headers          h
+      join   em.helper_sql_types            t
+      on     t.id = h.type
+      join   em.helper_sql_execution_points e
+      on     e.id = h.execution_point_id
+      left outer join
+             em.applications                a
+      on     (    t.description in ('APPLICATION', 'APP_ORG')
+              and h.reference_id = a.id
+             )
+      left outer join
+             em.organizations               o
+      on     (   (    t.description = 'ORGANIZATION'
+                  and h.reference_id = o.id
+                 )
+              or (    t.description = 'APP_ORG'
+                  and h.sub_reference_id = o.id
+                 )
+             )
+      join   em.helper_sql_details          d
+      on     d.header_id = h.id
+      where  e.description  = 'BLOCK';
+
+      timer.stopme(l_c_module || env.get_session_id);
+      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
+
+   exception
+      when others then
+         logs.err(l_tt_parms);
+
+   end get_blocks;
+
    procedure future_application_block
    (
       i_application_id em.applications.id%type,
@@ -548,8 +756,8 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      add_header(i_type               => 'APPLICATION',
-                 i_execution_point_id => 'BLOCK',
+      add_header(i_type               => get_type('APPLICATION'),
+                 i_execution_point_id => get_execution_point('BLOCK'),
                  i_reference_id       => i_application_id,
                  i_user_id            => i_user_id,
                  o_id                 => l_header_id
@@ -615,6 +823,8 @@ is
                     i_user_id   => i_user_id
                    );
 
+      remove_header(i_id => l_header_id, i_user_id => i_user_id);
+
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
 
@@ -658,8 +868,8 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      add_header(i_type               => 'ORGANIZATION',
-                 i_execution_point_id => 'BLOCK',
+      add_header(i_type               => get_type('ORGANIZATION'),
+                 i_execution_point_id => get_execution_point('BLOCK'),
                  i_reference_id       => i_organization_id,
                  i_user_id            => i_user_id,
                  o_id                 => l_header_id
@@ -725,6 +935,8 @@ is
                     i_user_id   => i_user_id
                    );
 
+      remove_header(i_id => l_header_id, i_user_id => i_user_id);
+
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
 
@@ -770,8 +982,8 @@ is
 
       logs.dbg('ENTRY', l_tt_parms);
 
-      add_header(i_type               => 'APP_ORG',
-                 i_execution_point_id => 'BLOCK',
+      add_header(i_type               => get_type('APP_ORG'),
+                 i_execution_point_id => get_execution_point('BLOCK'),
                  i_reference_id       => i_application_id,
                  i_sub_reference_id   => i_organization_id,
                  i_user_id            => i_user_id,
@@ -840,6 +1052,8 @@ is
                     i_id        => 1,
                     i_user_id   => i_user_id
                    );
+
+      remove_header(i_id => l_header_id, i_user_id => i_user_id);
 
       timer.stopme(l_c_module || env.get_session_id);
       logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');

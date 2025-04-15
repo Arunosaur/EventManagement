@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.MANAGER_PK
+create or replace package body em_code.MANAGER_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : MANAGER_PK
@@ -80,7 +80,7 @@ is
       and    q.organization_id = i_organization_id
       start with q.id = i_queue_id
       connect by prior q.id = q.previous_id;
-
+       l_log_parms       logs.tar_parm := logs.tar_parm();
    begin
       for each_row in csr_event_queues
       loop
@@ -204,7 +204,7 @@ is
             and    g.restricted_event_id = i_event_definition_id
            ),
         for_self_restrictions as
-           (select q.group_id, q.event_definition_id, q.organization_id, sys_connect_by_path(q.id, '-') pth
+           (select q.group_id, q.event_definition_id, q.organization_id, sys_connect_by_path(q.id, '->') pth
             from   em.event_queues q
             where  connect_by_isleaf = 1
             start with q.id = i_queue_id
@@ -220,7 +220,7 @@ is
                                where  s.description in ('Locked', 'Released', 'Failed')
                                and    e.event_definition_id = r.event_definition_id
                                and    e.organization_id = r.organization_id
-                               and    instr(r.pth, '-' || e.id) = 0
+                               and    instr(r.pth, '->' || e.id) = 0
                               )
                     or exists (select 1
                                from   em.event_queues       g
@@ -229,7 +229,7 @@ is
                                where  s.description in ('Locked', 'Released', 'Failed')
                                and    g.group_id = r.group_id
                                and    g.organization_id = r.organization_id
-                               and    instr(r.pth, '-' || g.id) = 0
+                               and    instr(r.pth, '->' || g.id) = 0
                               )
                    )
            )
@@ -428,6 +428,7 @@ is
             order by 1, 4 nulls first;
 
       l_is_continue boolean := false;
+      l_log_parms  logs.tar_parm := logs.tar_parm();
    begin
       <<disseminator>>
       for each_row in csr_group_events
@@ -449,9 +450,11 @@ is
                l_is_continue := true;
                continue;
 
+
             when TYPE_PK.e_event_restricted then
                l_is_continue := true;
                continue;
+               
          end;
 
          exit when not l_is_continue;

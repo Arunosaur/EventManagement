@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.RESTRICTIONS_PK
+create or replace package body em_code.RESTRICTIONS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : RESTRICTIONS_PK
@@ -31,7 +31,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_group';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -39,7 +39,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_restrictions for
-         select t.group_id, g.description group_description, t.restricted_group_id, r.description restrictred_group, t.user_id, t.last_change_date
+         select t.group_id, g.description group_description, t.restricted_group_id, r.description restricted_group, t.user_id, t.last_change_date
          from   em.group_restrictions t
          join   em.groups             g
          on     g.id = t.group_id
@@ -164,7 +164,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_event';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -172,7 +172,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_restrictions for
-         select t.event_id, e.description event_description, t.restricted_event_id, r.description restrictred_event, t.user_id, t.last_change_date
+         select t.event_id, e.description event, t.restricted_event_id, r.description restricted_event, t.user_id, t.last_change_date
          from   em.event_restrictions t
          join   em.event_definitions  e
          on     e.id = t.event_id
@@ -297,7 +297,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_group_event';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -305,7 +305,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_restrictions for
-         select t.group_id, g.description group_description, t.restricted_event_id, r.description restrictred_event, t.user_id, t.last_change_date
+         select t.group_id, g.description group_description, t.restricted_event_id, r.description restricted_event, t.user_id, t.last_change_date
          from   em.group_event_restrictions t
          join   em.groups                   g
          on     g.id = t.group_id
@@ -430,7 +430,7 @@ is
    */
    is
       l_c_module constant typ.t_maxfqnm := 'RESTRICTIONS_PK.get_event_group';
-
+   
       l_tt_parms logs.tar_parm;
    begin
       timer.startme(l_c_module || env.get_session_id);
@@ -438,7 +438,7 @@ is
       logs.dbg('ENTRY', l_tt_parms);
 
       open o_restrictions for
-         select t.event_id, e.description event_description, t.restricted_group_id, r.description restrictred_group, t.user_id, t.last_change_date
+         select t.event_id, e.description event, t.restricted_group_id, r.description restricted_group, t.user_id, t.last_change_date
          from   em.event_group_restrictions t
          join   em.event_definitions        e
          on     e.id = t.event_id

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.RESTRICTIONS_PK
+create or replace package em_code.RESTRICTIONS_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : RESTRICTIONS_PK

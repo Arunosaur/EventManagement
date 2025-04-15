@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY EM_CODE.QUEUE_PK
+create or replace package body em_code.QUEUE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : QUEUE_PK
@@ -1112,10 +1112,6 @@ is
    ||----------------------------------------------------------------------------
    */
    is
-      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.build_call';
-
-      l_tt_parms logs.tar_parm;
-
       cursor csr_event
       is
       select d.procedure_name, p.sequence, p.parameter_name, p.parameter_type, t.description data_type, p.parameter_size, trim(e.value) assigned_value, max(p.sequence) over() max_sequence
@@ -1154,15 +1150,6 @@ is
       l_object           varchar2(32767);
       l_size_and_value   varchar2(32767);
    begin
-      timer.startme(l_c_module || env.get_session_id);
-
-      logs.add_parm(l_tt_parms, 'i_group_id', i_group_id);
-      logs.add_parm(l_tt_parms, 'i_event_definition_id', i_event_definition_id);
-      logs.add_parm(l_tt_parms, 'i_application_id', i_application_id);
-      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
-
-      logs.dbg('ENTRY', l_tt_parms);
-
       l_command := 'declare' || chr(10);
 
       l_helper_count := count_global_block;
@@ -1258,7 +1245,7 @@ is
                                      end;
                end if;
             else
-               l_size_and_value := ' := ' || case each_row.parameter_name when 'i_queue_id' then i_queue_id else 'null' end || ';';
+               l_size_and_value := ' := ' || case each_row.parameter_name when 'i_queue_id' then to_char(i_queue_id) else 'null' end || ';';
             end if;
          else
             if DBMS_LOB.substr(each_row.assigned_value) is not null
@@ -1316,14 +1303,10 @@ is
 
       l_command := l_command || 'end;' || chr(10);
 
-      timer.stopme(l_c_module || env.get_session_id);
-      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
-
       return l_command;
 
    exception
       when others then
-         logs.err(l_tt_parms, i_reraise => false);
          return null;
 
    end build_call;
@@ -1348,10 +1331,6 @@ is
    ||----------------------------------------------------------------------------
    */
    is
-      l_c_module constant typ.t_maxfqnm := 'QUEUE_PK.push_default';
-
-      l_tt_parms logs.tar_parm;
-
       cursor csr_group_events
       is
       select g.application_id, e.event_definition_id, e.sequence, min(e.sequence) over() min_sequence
@@ -1365,15 +1344,6 @@ is
       l_previous_queue_id em.event_queues.previous_id%type;
       l_value             clob;
    begin
-      timer.startme(l_c_module || env.get_session_id);
-
-      logs.add_parm(l_tt_parms, 'i_group_id', i_group_id);
-      logs.add_parm(l_tt_parms, 'i_organization_id', i_organization_id);
-      logs.add_parm(l_tt_parms, 'i_run_after_tm', i_run_after_tm);
-      logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
-
-      logs.dbg('ENTRY', l_tt_parms);
-
       for each_ge in csr_group_events
       loop
          l_id := em.event_queues_id.nextval;
@@ -1393,12 +1363,9 @@ is
 
       end loop;
 
-      timer.stopme(l_c_module || env.get_session_id);
-      logs.dbg('RUNTIME: ' || timer.elapsed(l_c_module || env.get_session_id) || ' secs.');
-
    exception
       when others then
-         logs.err(l_tt_parms);
+         raise;
 
    end push_default;
 
@@ -1460,6 +1427,59 @@ is
          logs.err(l_tt_parms);
 
    end push_default;
+
+   procedure default_push
+   (
+      i_group_description em.groups.description%type,
+      i_application_code  em.applications.code%type,
+      i_organization_code em.organizations.code%type,
+      i_run_after_tm      em.event_queues.run_after_tm%type default null,
+      i_user_id           em.event_queues.create_user_id%type
+   )
+   /*
+   ||----------------------------------------------------------------------------
+   || default_push
+   ||   push the default to the event queue
+   ||----------------------------------------------------------------------------
+   ||             C H A N G E     L O G
+   ||----------------------------------------------------------------------------
+   || Date       | USERID  | Changes
+   ||----------------------------------------------------------------------------
+   || 2023/03/01 | asrajag | Original
+   ||----------------------------------------------------------------------------
+   */
+   is
+      pragma autonomous_transaction;
+
+      l_group_id        em.groups.id%type;
+      l_organization_id em.organizations.id%type;
+   begin
+      select g.id
+      into   l_group_id
+      from   em.applications a
+      join   em.groups       g
+      on     g.application_id = a.id
+      where  a.code = i_application_code
+      and    lower(trim(g.description)) = lower(trim(i_group_description));
+
+      select o.id
+      into   l_organization_id
+      from   em.organizations o
+      where  o.code = i_organization_code;
+
+      push_default(i_group_id        => l_group_id,
+                   i_organization_id => l_organization_id,
+                   i_run_after_tm    => i_run_after_tm,
+                   i_user_id         => i_user_id
+                  );
+
+      commit;
+
+   exception
+      when others then
+         rollback;
+
+   end default_push;
 
    procedure pull_default
    (
@@ -1556,29 +1576,67 @@ is
    is
       pragma autonomous_transaction;
 
-      l_status_id em.event_queue_status.id%type;
+      l_from_status    em.event_queue_status.description%type;
+      l_from_status_id em.event_queue_status.id%type;
+      l_to_status_id   em.event_queue_status.id%type;
 
-      l_id em.event_queues.id%type;
+      l_rowid rowid;
+
+      type rt_status is record
+      (current_status varchar2(40),
+       new_status     varchar2(40)
+      );
+
+      type tt_status is table of rt_status;
+
+      l_tt_status tt_status := tt_status();
+
+      l_found_status boolean := false;
    begin
-      select id
-      into   l_status_id
-      from   em.event_queue_status
-      where  lower(trim(description)) = lower(trim(i_to_status));
+      select f.description, f.id, t.id, q.rowid
+      into   l_from_status, l_from_status_id, l_to_status_id, l_rowid
+      from   em.event_queues       q
+      join   em.event_queue_status f
+      on     f.id = q.status_id
+      join   em.event_queue_status t
+      on     lower(trim(t.description)) = lower(trim(i_to_status))
+      where  q.id = i_id
+      for update of q.status_id, q.last_update_user_id, q.last_change_date nowait;
 
-      select id
-      into   l_id
-      from   em.event_queues
-      where  id        =  i_id
-      and    status_id != l_status_id
-      for update nowait;
+      l_tt_status.extend(8);
 
-      update em.event_queues
-      set    status_id           = l_status_id,
-             last_update_user_id = i_user_id,
-             last_change_date    = current_date
-      where  id = i_id;
+      --Move this to a table, temporary work around
+      l_tt_status(1) := rt_status('New', 'Locked');
+      l_tt_status(2) := rt_status('Locked', 'Released');
+      l_tt_status(3) := rt_status('Released', 'Completed');
+      l_tt_status(4) := rt_status('Released', 'Failed');
+      l_tt_status(5) := rt_status('Failed', 'New');
+      l_tt_status(6) := rt_status('Failed', 'Cancelled');
+      l_tt_status(7) := rt_status('Locked', 'New');
 
-      commit;
+      for i in 1 .. l_tt_status.count
+      loop
+         if (    lower(trim(l_tt_status(i).current_status)) = lower(trim(l_from_status))
+             and lower(trim(l_tt_status(i).new_status)) = lower(trim(i_to_status))
+            )
+         then
+            l_found_status := true;
+            exit;
+         end if;
+      end loop;
+
+      if l_found_status
+      then
+         update em.event_queues
+         set    status_id           = l_to_status_id,
+                last_update_user_id = i_user_id,
+                last_change_date    = current_date
+         where  id = i_id;
+
+         commit;
+      else
+         raise TYPE_PK.e_row_locked;
+      end if;
 
    exception
       when TYPE_PK.e_row_locked then
@@ -1620,7 +1678,7 @@ is
       logs.add_parm(l_tt_parms, 'i_before_string', i_before_string);
       logs.add_parm(l_tt_parms, 'i_user_id', i_user_id);
 
-      logs.info('ENTRY', l_tt_parms);
+      logs.dbg('ENTRY', l_tt_parms);
 
       update em.event_queues t
       set    t.value               = regexp_replace(t.value, i_before_string || chr(10) || '\s*RETURN;', i_before_string || ' RETURN;'),
@@ -1712,7 +1770,7 @@ is
 
       l_tt_parms logs.tar_parm;
 
-      l_c_before_string constant varchar2(15) := '--application_block';
+      l_c_before_string constant varchar2(20) := '--application_block';
    begin
       timer.startme(l_c_module || env.get_session_id);
 
@@ -1758,7 +1816,7 @@ is
       l_tt_parms logs.tar_parm;
 
 
-      l_c_before_string constant varchar2(15) := '--organization_block';
+      l_c_before_string constant varchar2(20) := '--organization_block';
    begin
       timer.startme(l_c_module || env.get_session_id);
 
@@ -1855,8 +1913,13 @@ is
 
       select listagg(cnt) within group (order by cnt)
       into   l_events
-      from   (select lower('UPDATE EM_' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code) || ' ' || count(q.group_id) || chr(10) cnt
-              from   em.organizations      o
+      from   (select lower('UPDATE EM_' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || decode(t.code, 'WHS',p.short_nm || '_', null) || o.short_nm || '_' || o.code) || ' ' || count(q.group_id) || chr(10) cnt
+              from   em.organization_types t
+              join   em.organizations      o
+              on     o.type = t.id
+              left outer join
+                     em.organizations      p
+              on     p.id = o.parent_id
               join   em.event_queues       q
               on     q.organization_id = o.id
               join   em.event_queue_status s
@@ -1865,12 +1928,12 @@ is
               on     g.id = q.group_id
               join   em.applications       a
               on     a.id = g.application_id
-              where  s.description = 'New'
+              where  s.description in ('New', 'Locked', 'Released')
               and    (   q.run_after_tm is null
                       or q.run_after_tm <= sysdate
                      )
               and    q.previous_id is null
-              group by 'UPDATE EM_' || sys_context('userenv', 'db_name') || '_' || a.code || '_' || o.short_nm || '_' || o.code
+              group by 'UPDATE EM_' || sys_context('userenv', 'db_name') || '_' || a.code || '_'|| decode(t.code, 'WHS',p.short_nm || '_', null) || o.short_nm || '_' || o.code
              );
 
       timer.stopme(l_c_module || env.get_session_id);
@@ -1908,7 +1971,12 @@ is
 
       open o_queues
       for
-      select q.id, a.description application, g.description group_description, d.description event, q.organization_id, o.name organization, q.status_id, s.description status, q.run_after_tm
+      select q.id, q.previous_id, a.description application, g.description group_description, d.description event, q.organization_id, o.name organization, q.status_id, s.description status, run_after_tm, q.last_change_date, q.last_update_user_id user_id,
+             case
+                when s.description in ('Cancelled', 'Completed')
+                then q.last_change_date
+                else nvl(q.run_after_tm, connect_by_root q.run_after_tm)
+             end as sort_tm, sys_connect_by_path(q.id, '->') pth
       from   em.event_queues       q
       join   em.event_queue_status s
       on     s.id = q.status_id
@@ -1922,11 +1990,9 @@ is
       on     a.id = g.application_id
       where  o.id = nvl(i_organization_id, o.id)
       and    a.id = nvl(i_application_id, a.id)
-      and    not exists (select 1
-                         from   em.event_logs l
-                         where  l.queue_id = q.id
-                        )
-      order by a.id, o.id, q.run_after_tm nulls first;
+      start with q.previous_id is null
+      connect by prior q.id  = q.previous_id
+      order by sort_tm nulls first, pth;
 
    exception
       when others then

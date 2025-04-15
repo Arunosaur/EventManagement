@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.QUEUE_PK
+create or replace package em_code.QUEUE_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : QUEUE_PK
@@ -25,6 +25,15 @@ is
    );
 
    procedure push_default
+   (
+      i_group_description em.groups.description%type,
+      i_application_code  em.applications.code%type,
+      i_organization_code em.organizations.code%type,
+      i_run_after_tm      em.event_queues.run_after_tm%type default null,
+      i_user_id           em.event_queues.create_user_id%type
+   );
+
+   procedure default_push
    (
       i_group_description em.groups.description%type,
       i_application_code  em.applications.code%type,

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE EM_CODE.GROUP_PK
+create or replace package em_code.GROUP_PK
 /*
 ||---------------------------------------------------------------------------------
 || NAME                : GROUP_PK
@@ -33,6 +33,13 @@ is
       i_preferred_run_tm em.groups.preferred_run_tm%type,
       i_user_id          em.groups.user_id%type,
       o_id               out em.groups.id%type
+   );
+
+   procedure modify
+   (
+      i_id          em.groups.id%type,
+      i_description em.groups.description%type,
+      i_user_id     em.groups.user_id%type
    );
 
    procedure change_cycle
